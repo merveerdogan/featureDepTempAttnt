@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Onset Difference Visualizer (Random Jittered B)</title>
+    <style>
+        body {
+            background: #0f1115;
+            color: #eee;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: #171a21;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        input,
+        button,
+        select {
+            margin: 4px;
+            padding: 6px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+            background: #0c0f15;
+            border: 1px solid #222;
+            border-radius: 12px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #333;
+            text-align: right;
+        }
+
+        th {
+            color: #bbb;
+        }
+
+        td.neg {
+            color: #f7768e;
+        }
+
+        td.pos {
+            color: #7ee787;
+        }
+
+        td.zero {
+            color: #9aa4b2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Onset Difference Visualizer — Random Jittered B</h1>
+    <div class="card">
+        Tempo A <input id="tempoA" type="number" value="300"> ms
+        Tempo B <input id="tempoB" type="number" value="410"> ms
+        Total Duration <input id="totalDur" type="number" value="2000"> ms
+        <label><input type="checkbox" id="showLines" checked> Show difference lines</label>
+        <label><input type="checkbox" id="useJitter"> Use jittered B (random offsets)</label>
+        <button id="runBtn">Generate</button>
+    </div>
+
+    <div class="card">
+        <canvas id="viz" width="1100" height="320"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Unified Timeline (Every Event)</h3>
+        <table id="eventTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Stream</th>
+                    <th>Idx</th>
+                    <th>t (ms)</th>
+                    <th>Partner Idx</th>
+                    <th>Partner t</th>
+                    <th>Diff (ms)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h4>Unique Diff Counts</h4>
+        <table id="counts">
+            <thead>
+                <tr>
+                    <th>Diff</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        function generateTimes(tempo, duration) {
+            const arr = []; for (let t = 0; t <= duration; t += tempo) arr.push(t); return arr;
+        }
+        function generateJitteredB(A) {
+            const offsets = [-200, -150, -100, -50, 50, 100, 150, 200];
+            const B = [];
+            for (let i = 0; i < A.length; i++) {
+                if (i === 0) {
+                    B.push(0); // always start at 0
+                } else {
+                    const off = offsets[Math.floor(Math.random() * offsets.length)];
+                    B.push(A[i] + off);
+                }
+            }
+            return B;
+        }
+
+        function nearestIdx(arr, t) {
+            let best = 0, bestDiff = Infinity;
+            for (let i = 0; i < arr.length; i++) {
+                const d = Math.abs(arr[i] - t);
+                if (d < bestDiff) { bestDiff = d; best = i; }
+            }
+            return best;
+        }
+        function computeUnified(A, B) {
+            const events = [];
+            // A events
+            A.forEach((tA, i) => {
+                const j = nearestIdx(B, tA), tB = B[j];
+                events.push({ stream: "A", idx: i, t: tA, partner: j, partnerT: tB, diff: tB - tA });
+            });
+            // B events
+            B.forEach((tB, j) => {
+                const i = nearestIdx(A, tB), tA = A[i];
+                events.push({ stream: "B", idx: j, t: tB, partner: i, partnerT: tA, diff: tA - tB });
+            });
+            events.sort((a, b) => a.t - b.t);
+            return events;
+        }
+        function cls(diff) { return diff === 0 ? "zero" : (diff < 0 ? "neg" : "pos"); }
+
+        function draw(A, B, events, duration, showLines) {
+            const canvas = document.getElementById("viz");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const pad = 60, yA = 100, yB = 220;
+            const scale = (canvas.width - 2 * pad) / duration;
+
+            ctx.strokeStyle = "#444";
+            ctx.beginPath(); ctx.moveTo(pad, yA); ctx.lineTo(canvas.width - pad, yA); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pad, yB); ctx.lineTo(canvas.width - pad, yB); ctx.stroke();
+
+            ctx.font = "11px sans-serif";
+            ctx.textAlign = "center"; ctx.textBaseline = "top";
+
+            // ticks A
+            ctx.strokeStyle = "#7ee787";
+            A.forEach((t, i) => {
+                const x = pad + t * scale;
+                ctx.beginPath(); ctx.moveTo(x, yA - 10); ctx.lineTo(x, yA + 10); ctx.stroke();
+                ctx.fillStyle = "#7ee787"; ctx.fillText(t, x, yA + 12);
+            });
+            // ticks B
+            ctx.strokeStyle = "#7aa2f7";
+            B.forEach((t, i) => {
+                const x = pad + t * scale;
+                ctx.beginPath(); ctx.moveTo(x, yB - 10); ctx.lineTo(x, yB + 10); ctx.stroke();
+                ctx.fillStyle = "#7aa2f7"; ctx.fillText(t, x, yB + 12);
+            });
+
+            if (showLines) {
+                ctx.textBaseline = "middle"; ctx.font = "12px sans-serif";
+                events.forEach(p => {
+                    const x1 = pad + p.t * scale;
+                    const x2 = pad + p.partnerT * scale;
+                    const y1 = (p.stream === "A" ? yA : yB);
+                    const y2 = (p.stream === "A" ? yB : yA);
+                    const diff = p.diff;
+                    ctx.strokeStyle = diff < 0 ? "#f7768e" : diff > 0 ? "#7ee787" : "#9aa4b2";
+                    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                    const xm = (x1 + x2) / 2, ym = (y1 + y2) / 2;
+                    ctx.fillStyle = ctx.strokeStyle;
+                    ctx.fillText(diff, xm, ym - 4);
+                });
+            }
+        }
+
+        function renderTable(events) {
+            const tbody = document.querySelector("#eventTable tbody");
+            tbody.innerHTML = "";
+            events.forEach((p, k) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${k + 1}</td><td>${p.stream}</td><td>${p.idx}</td><td>${p.t}</td>
+                  <td>${p.partner}</td><td>${p.partnerT}</td>
+                  <td class="${cls(p.diff)}">${p.diff}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        function renderCounts(events) {
+            const counts = {};
+            events.forEach(p => counts[p.diff] = (counts[p.diff] || 0) + 1);
+            const tbody = document.querySelector("#counts tbody"); tbody.innerHTML = "";
+            Object.keys(counts).sort((a, b) => a - b).forEach(d => {
+                const diff = parseInt(d);
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td class="${cls(diff)}">${diff}</td><td>${counts[d]}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function run() {
+            const tA = +document.getElementById("tempoA").value;
+            const tB = +document.getElementById("tempoB").value;
+            const dur = +document.getElementById("totalDur").value;
+            const showLines = document.getElementById("showLines").checked;
+            const useJitter = document.getElementById("useJitter").checked;
+
+            const A = generateTimes(tA, dur);
+            const B = useJitter ? generateJitteredB(A) : generateTimes(tB, dur);
+
+            const events = computeUnified(A, B);
+            draw(A, B, events, dur, showLines);
+            renderTable(events);
+            renderCounts(events);
+        }
+        document.getElementById("runBtn").onclick = run;
+        run();
+    </script>
+</body>
+
+</html>
