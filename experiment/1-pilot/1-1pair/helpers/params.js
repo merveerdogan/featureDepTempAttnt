@@ -1,4 +1,4 @@
-﻿/* ------------------------------------------
+/* ------------------------------------------
 Merve Erdogan - 10.17.25
 Feature Dependent Temporal Attention - Tapping - 1 pair
 Conditions (2x4 = 8): 

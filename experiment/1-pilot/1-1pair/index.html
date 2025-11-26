@@ -1,0 +1,215 @@
+<!--
+Merve Erdogan - 11.25.25
+Feature Dependent Temporal Attention - Tapping
+----------------------------------------------
+Experiment details: 
+- 1 pair of features: Color and Size
+- 4 conditions: Color attended (Size distractor) vs. Size attended (Color distractor)
+- Task: tapping the attended feature (color or size) as fast as possible
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Yale Psychology Experiment</title>
+    <!-- Standardize to jsPsych v6 (CDN) for Pavlovia v6-compatible experiments -->
+    <link href="https://unpkg.com/jspsych@6.3.1/css/jspsych.css" rel="stylesheet" type="text/css">
+    <script src="https://unpkg.com/jspsych@6.3.1/jspsych.js"></script>
+    <script src="https://unpkg.com/@pavlovia/jspsych-pavlovia@latest/dist/index.js"></script>
+
+    <!--Special JS files-->
+    <script src="helpers/params.js"></script>
+    <script defer src="helpers/scriptTagConfig.js"></script>
+    <script defer src="helpers/rhytmicFeatureChangeTask.js"></script>
+    <script defer src="helpers/instructionPractice.js"></script>
+    <script defer src="helpers/functions.js"></script>
+    <script defer src="helpers/instructions.js"></script>
+</head>
+
+<body>
+    <dialog id="lostFullscreen" style="text-align:center;background-color:lightgrey">
+        <b>Oops!</b> It looks like you exited fullscreen mode.
+        <br />
+        <button id="returnFullscreen" onclick="on_check_fullscreen_click()">Back to fullscreen</button>
+    </dialog>
+    <div id="experiment_content" class="full_height"></div>
+</body>
+
+<script>
+    /*
+    ==========================
+    EXPERIMENT START
+    ==========================
+    */
+    var experiment_start_time = new Date();
+    fullscreenActive = false;
+
+    // Wait for all scripts to load before initializing experiment
+    window.addEventListener('DOMContentLoaded', function () {
+        // Check if Pavlovia plugin is available
+        var usePavlovia = false;
+        if (typeof jsPsych !== 'undefined' && jsPsych.plugins) {
+            usePavlovia = typeof jsPsych.plugins['pavlovia'] !== 'undefined';
+        }
+
+
+        var timeline = [];
+        // Pavlovia initialization (only if plugin is available)
+        if (usePavlovia) {
+            var pavlovia_init = {
+                type: 'pavlovia',
+                command: 'init'
+            };
+            timeline.push(pavlovia_init);
+        }
+
+
+
+        /*
+        ===============================================================
+        INTRO & INSTRUCTION PROCEDURE
+        ===============================================================
+        */
+
+        //intro variables are defined in the function.js file
+        if (runIntro == true) {
+            timeline.push(check_device, survey);
+        }
+
+        // //instruction variables are defined in the instructions_xxx.js file
+        if (runInstr == true) {
+            // Filter out any undefined instructions
+            const filteredInstructions = instructions.filter(instr => instr !== undefined);
+            timeline.push(...filteredInstructions);
+        }
+
+        /*
+        ===============================================================
+                                TESTING PROCEDURE
+        ===============================================================
+        */
+        trialNum = 1;
+        function pushSingleTrial(conditionIndex) {
+
+            var getInstrStimulus = function () {
+                return conditions.attendedFeature[conditionIndex] === "color"
+                    ? "<div style='display: inline-block; margin: 0 auto; color: " + text_color + "; font-size: 30px; text-align: center'><p><div style='color: red; display: inline-block;'>Track Color</div> changes and <div style='color: red; display: inline-block;'>ignore Size</div> changes.</p><p>Press Enter to start the display.</p></div>"
+                    : "<div style='display: inline-block; margin: 0 auto; color: " + text_color + "; font-size: 30px; text-align: center'><p><div style='color: red; display: inline-block;'>Track Size</div> changes and <div style='color: red; display: inline-block;'>ignore Color</div> changes.</p><p>Press Enter to start the display.</p></div>";
+            };
+
+            var attendedFeatureInstr = {
+                timeline: [
+                    {
+                        type: "html-keyboard-response",
+                        stimulus: getInstrStimulus,
+                        choices: jsPsych.NO_KEYS,
+                        trial_duration: 400 //to make sure they read the instruction
+                    },
+                    {
+                        type: "html-keyboard-response",
+                        stimulus: getInstrStimulus,
+                        choices: ["Enter"],
+                        response_ends_trial: true
+                    }
+                ]
+            }
+
+            var ITI = {
+                type: "html-keyboard-response",
+                stimulus: ["<p style='color: white; font-size: 50px; text-align: center'>+</p>"],
+                choices: jsPsych.NO_KEYS,
+                response_ends_trial: false,
+                trial_duration: Math.random() * 500 + 500, //500-1000ms
+            }
+            var trial = {
+                type: "rhytmicFeatureChangeTask", // plugin: ../99-commonJS/rhytmicFeatureChangeTask.js
+                //trial-wise changing condition parameters
+                attendedFeature: conditions.attendedFeature[conditionIndex],
+                attendedTempo: conditions.tempoTargetDist[conditionIndex][0],
+                distractorTempo: conditions.tempoTargetDist[conditionIndex][1],
+
+                //general parameters
+                displayDuration: paramsGeneral.displayDuration,
+                rectBaseSize: [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+                sizeChangeRate: paramsGeneral.sizeChangeRate,
+                sizeTempo: conditions.attendedFeature[conditionIndex] === "size" ? conditions.tempoTargetDist[conditionIndex][0] : conditions.tempoTargetDist[conditionIndex][1],
+                baseColor: paramsGeneral.baseColor,
+                colorChangeRate: paramsGeneral.colorChangeRate,
+                colorTempo: conditions.attendedFeature[conditionIndex] === "color" ? conditions.tempoTargetDist[conditionIndex][0] : conditions.tempoTargetDist[conditionIndex][1],
+                responseKey: " ",
+                data: { trial_category: "test" },
+                on_finish: function (data) {
+                    data.trial = trialNum;
+                    trialNum++;
+                }
+            };
+            timeline.push(attendedFeatureInstr, ITI, trial);
+        }
+
+        for (c = 0; c < totalTrialNum; c++) {
+            pushSingleTrial(c);
+        }
+
+
+        /*
+        ===============================================================
+        CLOSING PROCEDURE
+        ===============================================================
+        */
+        //closing variables are in the function file
+        timeline.push(cursor_on, finishing, debreif_qs, exit_fullscreen, closing);
+
+        // Pavlovia finish (only if plugin is available)
+        if (usePavlovia) {
+            var pavlovia_finish = {
+                type: 'pavlovia',
+                command: 'finish'
+            };
+            timeline.push(pavlovia_finish);
+        }
+
+        jsPsych.init({
+            timeline: timeline,
+
+            on_interaction_data_update: function (data) {
+                // Call check_fullscreen if it exists
+                if (typeof check_fullscreen === 'function') {
+                    check_fullscreen(data);
+                }
+                viewport_width = get_viewport_size().width;
+                viewport_height = get_viewport_size().height;
+                data.screen_width = viewport_width;
+                data.screen_height = viewport_height;
+            },
+            on_finish: function () {
+                // Add timestamps
+                try {
+                    jsPsych.data.addProperties({
+                        experiment_start_time: experiment_start_time ? experiment_start_time.toISOString() : null,
+                        experiment_end_time: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.warn('Could not add experiment timestamps', e);
+                }
+
+                // Pavlovia plugin handles data submission automatically
+                // This fallback is for local testing
+                if (!usePavlovia) {
+                    try {
+                        jsPsych.data.get().localSave('csv', 'results.csv');
+                        console.log('Data saved locally as results.csv (local testing mode)');
+                    } catch (e) {
+                        console.error('Local save failed:', e);
+                    }
+                }
+            },
+            display_element: 'experiment_content',
+            auto_update_progress_bar: false
+        });
+    }); // End DOMContentLoaded
+</script>
+</body>
+
+</html>

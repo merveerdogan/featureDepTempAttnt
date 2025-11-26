@@ -1,0 +1,32 @@
+# Data files - don't upload to Pavlovia (data is stored on Pavlovia servers)
+data/
+*.csv
+
+# Mac system files
+.DS_Store
+**/.DS_Store
+
+# PHP file for local data saving (not needed on Pavlovia)
+write_data.php
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Deployment scripts and config (keep local, don't push to Pavlovia)
+_deploy/
+
