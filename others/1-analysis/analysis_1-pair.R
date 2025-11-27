@@ -1,354 +1,288 @@
 library(tidyverse)
 library(jsonlite)
 library(shiny)
+library(ggplot2)
+library(dplyr)
+
 
 
 folder <- "/Users/merve/Library/CloudStorage/OneDrive-YaleUniversity/Projects/Studies/featureDepTempAttnt/experiment/1-pilot/1-1pair/data/filtered"
-files <- list.files(folder, pattern = "\\.csv$", full.names = TRUE)
+files  <- list.files(folder, pattern="\\.csv$", full.names=TRUE)
 
-df <- purrr::map_df(files, ~ read.csv(.x, stringsAsFactors = FALSE, check.names = FALSE)) %>%
+df <- purrr::map_df(files, ~ read.csv(.x, stringsAsFactors=FALSE, check.names=FALSE)) %>%
   mutate(trial = row_number())
+
+# --------------------------------------------------
+# HELPERS
+# --------------------------------------------------
+
+parse_json <- function(x) {
+  if (is.na(x) || x == "") return(NULL)
+  tryCatch(fromJSON(x), error=function(e) NULL)
+}
 
 extract_hue <- function(hsl_string) {
   as.numeric(str_extract(hsl_string, "(?<=hsl\\().+?(?=,)"))
 }
-parse_json <- function(x) {
-  if (is.na(x) || x == "") {
-    return(NULL)
-  }
-  tryCatch(fromJSON(x), error = function(e) NULL)
+
+keypress_angle <- function(k, events) {
+  events <- sort(unique(events))
+  
+  if (length(events) < 2)
+    return(rep(NA_real_, length(k)))
+  
+  # find interval each key belongs to
+  idx <- findInterval(k, events, left.open = TRUE)
+  
+  # keys before first event or after last event → NA
+  idx[idx == 0 | idx >= length(events)] <- NA
+  
+  angle <- rep(NA_real_, length(k))
+  
+  valid <- !is.na(idx)
+  
+  e1 <- events[idx[valid]]
+  e2 <- events[idx[valid] + 1]
+  
+  angle[valid] <- 360 * (k[valid] - e1) / (e2 - e1)
+  angle
 }
+
+
+
+
+# --------------------------------------------------
+# PARSE LOGS
+# --------------------------------------------------
 
 parsed <- df %>%
   rowwise() %>%
   mutate(
     sizeEvents = list({
       raw <- parse_json(sizeChangeLog)
-      if (is.null(raw)) {
-        return(tibble())
-      }
-      tibble(size_time = raw$timeMs, size_width = map_dbl(raw$rectSize, 1), size_height = map_dbl(raw$rectSize, 2))
+      if (is.null(raw)) return(NULL)
+      tibble(
+        size_time  = raw$timeMs,
+        size_width = map_dbl(raw$rectSize, 1),
+        size_height = map_dbl(raw$rectSize, 2)
+      )
     }),
+    
     colorEvents = list({
       raw <- parse_json(colorChangeLog)
-      if (is.null(raw)) {
-        return(tibble())
-      }
-      tibble(color_time = raw$timeMs, hue = map_dbl(raw$colorHsl, extract_hue))
+      if (is.null(raw)) return(NULL)
+      tibble(
+        color_time = raw$timeMs,
+        hue        = map_dbl(raw$colorHsl, extract_hue)
+      )
     }),
+    
     keyEvents = list({
       raw <- parse_json(keypressLog)
-      if (is.null(raw)) {
-        return(tibble())
-      }
-      tibble(key_time = raw$key_time_ms %||% raw$time_ms)
+      if (is.null(raw)) return(NULL)
+      tibble(
+        key_time = if (!is.null(raw$key_time_ms)) raw$key_time_ms else raw$time_ms
+      )
     })
   ) %>%
   ungroup()
 
+# --------------------------------------------------
+# UNNEST EACH EVENT TYPE CORRECTLY
+# --------------------------------------------------
+
 size_timing_df <- parsed %>%
   select(trial, attendedFeature, sizeTempo, colorTempo, sizeEvents) %>%
   unnest(sizeEvents)
+
 color_timing_df <- parsed %>%
   select(trial, attendedFeature, sizeTempo, colorTempo, colorEvents) %>%
   unnest(colorEvents)
+
 key_timing_df <- parsed %>%
   select(trial, attendedFeature, sizeTempo, colorTempo, keyEvents) %>%
   unnest(keyEvents)
 
-
-
-size_big_timing <- size_timing_df %>%
+# --------------------------------------------------
+# BIG SIZE EVENTS
+# --------------------------------------------------
+size_big <- size_timing_df %>%
   group_by(trial) %>%
-  mutate(
-    size_val = pmax(size_width, size_height),
-    big_val = max(unique(size_val)),
-    is_big = size_val == big_val
-  ) %>%
-  filter(is_big) %>%
-  select(trial, size_time)
-
-color_big_timing <- color_timing_df %>%
-  group_by(trial) %>%
-  mutate(
-    big_hue = max(unique(hue)),
-    is_big = hue == big_hue
-  ) %>%
-  filter(is_big) %>%
-  select(trial, color_time)
-
-pick_key <- function(keys, t) {
-  win <- keys %>% filter(abs(key_time - t) <= 500)
-  if (nrow(win) == 0) {
-    return(NA_real_)
-  }
-  win %>%
-    arrange(key_time) %>%
-    slice(1) %>%
-    pull(key_time)
-}
-
-rel_size <- filter(key_timing_df, attendedFeature == "size") %>%
-  group_by(trial, sizeTempo, colorTempo) %>%
-  group_modify(~ {
-    keys <- .x
-    s <- size_big_timing %>% filter(trial == .y$trial)
-    if (nrow(s) == 0) {
-      return(tibble())
-    }
-    tibble(
-      size_change = s$size_time,
-      key_selected = map_dbl(s$size_time, ~ pick_key(keys, .x)),
-      rel_time = key_selected - size_change
-    ) %>% filter(!is.na(rel_time))
-  }) %>%
-  ungroup()
-
-rel_color <- filter(key_timing_df, attendedFeature == "color") %>%
-  group_by(trial, sizeTempo, colorTempo) %>%
-  group_modify(~ {
-    keys <- .x
-    c <- color_big_timing %>% filter(trial == .y$trial)
-    if (nrow(c) == 0) {
-      return(tibble())
-    }
-    tibble(
-      color_change = c$color_time,
-      key_selected = map_dbl(c$color_time, ~ pick_key(keys, .x)),
-      rel_time = key_selected - color_change
-    ) %>% filter(!is.na(rel_time))
-  }) %>%
-  ungroup()
-
-rel_size <- rel_size %>% mutate(tempo_pair = paste0(sizeTempo, "-", colorTempo))
-rel_color <- rel_color %>% mutate(tempo_pair = paste0(sizeTempo, "-", colorTempo))
-
-# Set explicit order for tempo pairs
-pairs4 <- c("350-400", "400-350", "450-500", "500-450")
-rel_size$tempo_pair <- factor(rel_size$tempo_pair, levels = pairs4)
-rel_color$tempo_pair <- factor(rel_color$tempo_pair, levels = pairs4)
-
-
-
-
-
-
-
-
-size_color_pairs <- size_big_timing %>%
-  group_by(trial) %>%
-  group_modify(~ {
-    s <- .x$size_time
-    c <- color_big_timing %>%
-      filter(trial == .y$trial) %>%
-      pull(color_time)
-    if (length(c) == 0) {
-      return(tibble())
-    }
-    tibble(
-      size_time = s,
-      color_time = map_dbl(s, ~ c[which.min(abs(c - .x))]),
-      size_color_delta = size_time - map_dbl(s, ~ c[which.min(abs(c - .x))])
-    )
-  }) %>%
-  ungroup()
-
-
-
-
-rel_key_size_vs_sc <- filter(key_timing_df, attendedFeature == "size") %>%
-  group_by(trial, sizeTempo, colorTempo) %>%
-  group_modify(~ {
-    keys <- .x
-    sc <- size_color_pairs %>% filter(trial == .y$trial)
-    if (nrow(sc) == 0) {
-      return(tibble())
-    }
-    tibble(
-      size_color_delta = sc$size_color_delta,
-      size_time = sc$size_time,
-      key_selected = map_dbl(sc$size_time, ~ pick_key(keys, .x)),
-      key_minus_size = map_dbl(sc$size_time, ~ {
-        k <- pick_key(keys, .x)
-        if (is.na(k)) {
-          return(NA_real_)
-        }
-        k - .x
-      })
-    )
-  }) %>%
-  ungroup() %>%
-  mutate(
-    tempo_pair = paste0(sizeTempo, "-", colorTempo),
-    tempo_pair = factor(tempo_pair, levels = pairs4)
+  filter(pmax(size_width, size_height) == max(pmax(size_width, size_height))) %>%
+  select(trial, size_time) %>%
+  left_join(df %>% select(trial, attendedFeature, sizeTempo, colorTempo), by="trial") %>%
+  arrange(trial, size_time) %>%
+  group_by(trial, attendedFeature, sizeTempo, colorTempo) %>%
+  summarise(
+    big_times  = list(sort(size_time)),
+    key_times  = list(key_timing_df$key_time[key_timing_df$trial == unique(trial)]),
+    size_key_angles = list(
+      round(
+        keypress_angle(
+          key_timing_df$key_time[key_timing_df$trial == unique(trial)],
+          sort(size_time)
+        ),
+        2
+      )
+    ),
+    .groups = "drop"
   )
 
-rel_key_color_vs_sc <- filter(key_timing_df, attendedFeature == "color") %>%
-  group_by(trial, sizeTempo, colorTempo) %>%
-  group_modify(~ {
-    keys <- .x
-    sc <- size_color_pairs %>% filter(trial == .y$trial)
-    if (nrow(sc) == 0) {
-      return(tibble())
-    }
-    tibble(
-      size_color_delta = sc$size_color_delta,
-      color_time = sc$color_time,
-      key_selected = map_dbl(sc$color_time, ~ pick_key(keys, .x)),
-      key_minus_color = map_dbl(sc$color_time, ~ {
-        k <- pick_key(keys, .x)
-        if (is.na(k)) {
-          return(NA_real_)
-        }
-        k - .x
-      })
-    )
-  }) %>%
-  ungroup() %>%
-  mutate(
-    tempo_pair = paste0(sizeTempo, "-", colorTempo),
-    tempo_pair = factor(tempo_pair, levels = pairs4)
+
+
+# --------------------------------------------------
+# BIG COLOR EVENTS
+# --------------------------------------------------
+
+color_big <- color_timing_df %>%
+  group_by(trial) %>%
+  filter(hue == max(hue)) %>%
+  select(trial, color_time) %>%
+  left_join(df %>% select(trial, attendedFeature, sizeTempo, colorTempo), by="trial") %>%
+  arrange(trial, color_time) %>%
+  group_by(trial, attendedFeature, sizeTempo, colorTempo) %>%
+  summarise(
+    big_times  = list(sort(color_time)),
+    key_times  = list(key_timing_df$key_time[key_timing_df$trial == unique(trial)]),
+    color_key_angles = list(
+      round(
+        keypress_angle(
+          key_timing_df$key_time[key_timing_df$trial == unique(trial)],
+          sort(color_time)
+        ),
+        2
+      )
+    ),
+    .groups = "drop"
   )
 
-aligned_data <- rbind(rel_key_color_vs_sc,rel_key_color_vs_sc)
+circular_all_data <- size_big %>%
+  left_join(
+    color_big %>% 
+      select(trial, color_times = big_times, color_key_angles = color_key_angles),
+    by = "trial"
+  ) %>% 
+  mutate(
+    tempo_pair = ifelse(
+      attendedFeature == "color",
+      paste0(colorTempo, "-", sizeTempo),
+      paste0(sizeTempo, "-", colorTempo)
+    )
+  )
 
-plot_df <- bind_rows(size_big_timing, color_big_timing, key_timing_df) %>%
-  mutate(tempo_pair = factor(tempo_pair, levels = pairs4))
+conditions <- circular_all_data %>%
+  group_by(attendedFeature, tempo_pair) %>%
+  summarise(total_trials = n_distinct(trial), .groups="drop")
 
-# -------------------------
-# COMBINED SHINY APP WITH TABS
-# -------------------------
+
+circular_long <- circular_all_data %>%
+  select(trial, attendedFeature, tempo_pair, size_key_angles, color_key_angles) %>%
+  mutate(
+    size_key_angles  = map(size_key_angles, ~ .x),
+    color_key_angles = map(color_key_angles, ~ .x)
+  ) %>%
+  pivot_longer(
+    cols = c(size_key_angles, color_key_angles),
+    names_to = "angle_type",
+    values_to = "angles"
+  ) %>%
+  unnest(angles)
+
+
+
+# --------------------------------------------------
+# PLOT (works instantly)
+# --------------------------------------------------
+ggplot(circular_long, aes(x = angles, fill = angle_type)) +
+  geom_histogram(binwidth = 10, alpha = 0.7, position = "identity") +
+  
+  # --- 0° at top, clockwise ---
+  coord_polar(start = -pi/2, direction = 1) +
+  
+  scale_fill_manual(values = c(
+    "size_key_angles"  = "steelblue",
+    "color_key_angles" = "firebrick"
+  )) +
+  
+  # --- set ANGLE labels (0°, 90°, 180°, 270°) ---
+  scale_x_continuous(
+    breaks = c(0, 90, 180, 270),
+    labels = c("0°", "90°", "180°", "270°"),
+    limits = c(0, 360)
+  ) +
+  
+  # --- keep radial grid + numbers ---
+  theme_minimal() +
+  
+  facet_grid(attendedFeature ~ tempo_pair) +
+  
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    panel.spacing = unit(1, "lines"),
+    
+    axis.title = element_blank(),   # no axis titles
+    axis.text.y = element_text(size = 8),  # keep radial labels
+    axis.text.x = element_text(size = 10), # keep angle labels
+    axis.ticks = element_line()
+  )
+
+
+### INTERACTIVE PLOTS ###
 ui <- fluidPage(
-  titlePanel("Analysis Dashboard"),
   tabsetPanel(
-    # Tab 1: Relative Onsets Distribution
-    tabPanel(
-      "Relative Onsets Distribution",
-      sidebarLayout(
-        sidebarPanel(
-          sliderInput("binw", "Bin Width (ms):", min = 5, max = 200, value = 50, step = 5),
-          sliderInput("range", "Target-Distractor Onset Difference Range (+-):", min = 50, max = 500, value = 200, step = 10)
-        ),
-        mainPanel(
-          plotOutput("dyn_plot", height = "700px")
-        )
-      )
+    tabPanel("All trials",
+             plotOutput("avg_plot")
     ),
-    # Tab 2: Raw Keypress Timeline
-    tabPanel(
-      "Raw Keypress Timeline",
-      sidebarLayout(
-        sidebarPanel(
-          sliderInput("trial_sel", "Trial:",
-            min = min(df$trial), max = max(df$trial), value = 1, step = 1
-          ),
-          sliderInput("time_window", "Time Window (ms):",
-            min = 10, max = max(plot_df$time, na.rm = TRUE),
-            value = max(plot_df$time, na.rm = TRUE), step = 10
-          )
-        ),
-        mainPanel(
-          plotOutput("p_raw", height = "700px")
-        )
-      )
-    ),
-    # Tab 3: Coefficient of Variation
-    tabPanel(
-      "Coefficient of Variation",
-      plotOutput("cv_plot", height = "700px")
+    tabPanel("Trial-byTrial",
+             sliderInput("trial_idx","Trial index", min=1,  max = unique(conditions$total_trials), value = 1,step = 1),
+             plotOutput("trial_plot")
     )
   )
 )
-
-server <- function(input, output, session) {
-  # Tab 1: Relative Onsets Distribution
-  output$dyn_plot <- renderPlot({
-    rng <- input$range
-    bw <- input$binw
-
-    df_zoom <- aligned_data %>%
-      filter(attended_delta >= -rng, attended_delta <= rng) %>%
-      mutate(
-        bin = cut(attended_delta,
-          breaks = seq(-rng, rng, by = bw),
-          include.lowest = TRUE, right = FALSE
-        )
-      ) %>%
-      group_by(attend_panel, tempo_pair, bin) %>%
-      summarise(mean_rel = mean(attended_rel, na.rm = TRUE), .groups = "drop")
-
-    df_zoom$attend_panel <- factor(df_zoom$attend_panel,
-      levels = c("Size-Attended", "Color-Attended")
-    )
-
-    ggplot(df_zoom, aes(x = bin, y = mean_rel, color = attend_panel, group = 1)) +
-      geom_line(linewidth = 1) +
-      geom_point(size = 2) +
-      facet_grid(attend_panel ~ tempo_pair) +
-      scale_color_manual(values = c(
-        "Size-Attended" = "steelblue",
-        "Color-Attended" = "darkred"
-      )) +
-      theme_bw() +
-      theme(
-        axis.text.x = element_text(angle = 90, hjust = 1),
-        legend.position = "none"
-      ) +
-      labs(
-        x = "Attended <U+2013> Unattended (dynamic bins)",
-        y = "Mean Relative Keypress Time"
-      )
+server <- function(input, output, session){
+  
+  output$avg_plot <- renderPlot({
+    ggplot(circular_long, aes(x = angles, fill = angle_type)) +
+      geom_histogram(binwidth = 10, alpha = 0.7, position="identity") +
+      coord_polar(start=-pi/2, direction=1) +
+      scale_fill_manual(values=c("size_key_angles"="steelblue","color_key_angles"="firebrick")) +
+      scale_x_continuous(breaks=c(0,90,180,270),
+                         labels=c("0°","90°","180°","270°"),
+                         limits=c(0,360)) +
+      theme_minimal() +
+      facet_grid(attendedFeature ~ tempo_pair)
   })
-
-  # Tab 2: Raw Keypress Timeline
-  output$p_raw <- renderPlot({
-    d <- plot_df %>%
-      filter(
-        trial == input$trial_sel,
-        time <= input$time_window
+  
+  output$trial_plot <- renderPlot({
+    dat <- dat <- circular_long %>%
+      group_by(attendedFeature, tempo_pair) %>%
+      summarise(
+        trials_sorted = sort(unique(trial)),
+        .groups = "drop"
       ) %>%
-      mutate(
-        event_type = case_when(
-          col == "orange" ~ "Size changes",
-          col == "purple" ~ "Color changes",
-          col == "black" ~ "Keypresses",
-          TRUE ~ col
+      group_by(attendedFeature, tempo_pair) %>%
+      mutate(cond_trial_index = row_number()) %>%
+      filter(cond_trial_index == input$trial_idx) %>%
+      inner_join(
+        circular_long,
+        by = c(
+          "attendedFeature",
+          "tempo_pair",
+          "trials_sorted" = "trial"
         )
       )
-
-    ggplot(d) +
-      geom_segment(aes(x = time, xend = time, y = y0, yend = y1, color = event_type), linewidth = 1.2) +
-      scale_color_manual(
-        values = c(
-          "Size changes" = "orange",
-          "Color changes" = "purple",
-          "Keypresses" = "black"
-        ),
-        name = "Event Type"
-      ) +
-      facet_grid(attendedFeature ~ tempo_pair, scales = "free_x") +
-      coord_cartesian(ylim = c(-0.25, 0.30)) +
-      theme_bw() +
-      theme(
-        axis.title.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        strip.text = element_text(size = 10),
-        legend.position = "right",
-        plot.margin = margin(5, 5, 5, 5)
-      ) +
-      labs(x = "Time (ms)")
-  })
-
-  # Tab 3: Coefficient of Variation
-  output$cv_plot <- renderPlot({
-    ggplot(cv_df, aes(x = attendedFeature, y = CV, fill = bar_color)) +
-      geom_col(width = 0.6) +
-      scale_fill_identity() +
-      facet_grid(. ~ tempo_pair) +
-      theme_bw() +
-      labs(x = NULL, y = "Coefficient of Variation (IKI)")
+    
+    ggplot(dat, aes(x = angles, fill = angle_type)) +
+      geom_histogram(binwidth = 10, alpha = 0.7, position="identity") +
+      coord_polar(start=-pi/2, direction=1) +
+      scale_fill_manual(values=c("size_key_angles"="steelblue","color_key_angles"="firebrick")) +
+      scale_x_continuous(breaks=c(0,90,180,270),
+                         labels=c("0°","90°","180°","270°"),
+                         limits=c(0,360)) +
+      theme_minimal() +
+      facet_grid(attendedFeature ~ tempo_pair)
   })
 }
 
 shinyApp(ui, server)
+
