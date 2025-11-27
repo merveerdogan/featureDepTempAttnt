@@ -192,16 +192,16 @@ STYLE FUNCTIONS
 function standard_instr_style(x) {
     // Handle both arrays and single strings
     if (Array.isArray(x)) {
-        // Map over array and wrap each element
-        // Container centered horizontally, text vertically centered with padding, left-aligned inside
         return x.map(function (text) {
-            return "<div style='display: flex; justify-content: center; width: 100%; padding-top: calc(50vh - 150px);'><div style='display: inline-block; color: " + text_color + " !important; padding: 10px 200px 10px 200px; text-align: left; max-width: 800px; margin-bottom: 0;'>" + text + "</div></div>";
+            return "<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 80vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + text + "</div></div>";
         });
     } else {
-        // Single string - wrap it
-        // Container centered horizontally, text vertically centered with padding, left-aligned inside
-        return ["<div style='display: flex; justify-content: center; width: 100%; padding-top: calc(50vh - 150px);'><div style='display: inline-block; color: " + text_color + " !important; padding: 10px 200px 10px 200px; text-align: left; max-width: 800px; margin-bottom: 0;'>" + x + "</div></div>"];
+        return ["<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 80vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + x + "</div></div>"];
     }
+}
+
+function practice_instr_style(x) {
+    return ["<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 10vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + x + "</div></div>"];
 }
 
 function change_background_color(color) {

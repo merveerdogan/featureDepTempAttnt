@@ -15,7 +15,7 @@ Experiment details:
     <meta charset="utf-8" />
     <title>Yale Psychology Experiment</title>
     <!-- Standardize to jsPsych v6 (CDN) for Pavlovia v6-compatible experiments -->
-    <link href="https://unpkg.com/jspsych@6.3.1/css/jspsych.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="helpers/jspsych.css">
     <script src="https://unpkg.com/jspsych@6.3.1/jspsych.js"></script>
     <script src="https://unpkg.com/@pavlovia/jspsych-pavlovia@latest/dist/index.js"></script>
 
@@ -94,9 +94,10 @@ Experiment details:
         function pushSingleTrial(conditionIndex) {
 
             var getInstrStimulus = function () {
-                return conditions.attendedFeature[conditionIndex] === "color"
-                    ? "<div style='display: inline-block; margin: 0 auto; color: " + text_color + "; font-size: 30px; text-align: center'><p><div style='color: red; display: inline-block;'>Track Color</div> changes and <div style='color: red; display: inline-block;'>ignore Size</div> changes.</p><p>Press Enter to start the display.</p></div>"
-                    : "<div style='display: inline-block; margin: 0 auto; color: " + text_color + "; font-size: 30px; text-align: center'><p><div style='color: red; display: inline-block;'>Track Size</div> changes and <div style='color: red; display: inline-block;'>ignore Color</div> changes.</p><p>Press Enter to start the display.</p></div>";
+                var text = conditions.attendedFeature[conditionIndex] === "color"
+                    ? "<p><div style='color: red; display: inline-block;'> <h1>Track Color</h1> </div> changes and <div style='color: red; display: inline-block;'> <h1>ignore Size</h1> </div> changes.</p><p>Press Enter to start the display.</p>"
+                    : "<p><div style='color: red; display: inline-block;'> <h1>Track Size</h1> </div> changes and <div style='color: red; display: inline-block;'> <h1>ignore Color</h1> </div> changes.</p><p>Press Enter to start the display.</p>";
+                return standard_instr_style(text);
             };
 
             var attendedFeatureInstr = {

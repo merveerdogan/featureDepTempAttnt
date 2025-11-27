@@ -66,10 +66,10 @@ var instrStartText = [
 ];
 
 var colorAlternationExplanationText = [
-    '<div style="margin-top: 60px;">In this experiment, you will see a rectangle changing its color in a steady rhythm like the one below. See how it switches from blue to purple and then back to blue again, just like the regular beat of a song.<br><br></div>'];
+    'In this experiment, you will see a rectangle changing its color in a steady rhythm like the one below. See how it switches from blue to purple and then back to blue again, just like the regular beat of a song.<br><br>'];
 
 var sizeAlternationExplanationText = [
-    '<div style="margin-top: 60px;">Just like the color, the rectangle will also rhythmically alternate its size as you can see in the example below. It will grow larger and then return to its original size in a regular rhythm.<br><br></div>'];
+    'Just like the color, the rectangle will also rhythmically alternate its size as you can see in the example below. It will grow larger and then return to its original size in a regular rhythm.<br><br>'];
 
 var bothFeaturesAlternatingExplanationText = [
     'In the examples so far, the rectangle alternated only one feature at a time (either its color or its size) rhythmically. In the actual experiment, both the color and the size will alternate together.<br><br>' +
@@ -121,7 +121,7 @@ var finalInstructionsText = [
     `That's it. You will just do this same task for about ` + estTotalRunTime + ` minutes. The rhythm of alternation will vary from one display to the next. Sometimes the color alternation will be faster than the size alternation, sometimes the size will be faster than the color.<br><br>` +
     `Regardless of these variations, your task remains the same. If you are asked to pay attention to the color, press the Space key everytime the rectangle changes to purple as soon as possible and ignore the size changes. If you are asked to pay attention to the size, press the Space key everytime the rectangle grows larger as soon as possible and ignore the color changes.<br><br>` +
     `You may find it difficult at times to ignore the other feature, and that is completely normal. The experiment is designed to be challenging in this way. Please do your best to stay focused for the whole task, as your responses are only useful if you give your full attention to the instructed feature.<br><br>` +
-    `Please always keep one of your hands on the mouse to start the displays and the index finger of the other hand on the 'Space' key ready so that you can immediately start tapping with the rectangle alternation. You can now start the experiment when you are ready.`
+    `Please always use your dominant hand to press the 'Space' key. You can now start the experiment when you are ready.`
 ];
 
 /*
@@ -142,7 +142,7 @@ var instrStart = {
 // Color alternation explanation with live example display
 var colorAlternationExplanation = {
     type: "instructionPractice",
-    instructionText: standard_instr_style(colorAlternationExplanationText[0])[0],
+    instructionText: practice_instr_style(colorAlternationExplanationText)[0],
     attendedFeature: "color",
     attendedTempo: 300,
     distractorTempo: 300,
@@ -162,7 +162,7 @@ var colorAlternationExplanation = {
 // Size alternation explanation with live example display
 var sizeAlternationExplanation = {
     type: "instructionPractice",
-    instructionText: standard_instr_style(sizeAlternationExplanationText[0])[0],
+    instructionText: practice_instr_style(sizeAlternationExplanationText)[0],
     attendedFeature: "size",
     attendedTempo: 300,
     distractorTempo: 300,
@@ -413,6 +413,7 @@ var instrEnd = {
     show_clickable_nav: true,
     allow_backward: false,
     button_delay: delay,
+    button_label_next: "Start",
     data: { trialCategory: "instructions_end" }
 };
 
