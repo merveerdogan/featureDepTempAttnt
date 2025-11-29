@@ -1,39 +1,28 @@
-﻿/* Merve Erdogan - 10.21.25 
+﻿/* Merve Erdogan - 11.29.25 
 Feature-Dependent Temporal Attention (Color & Size) - Pilot V1.1
 */
+
 function allow_continue() {
     document.getElementById('next-btn').removeAttribute('disabled');
-    document.getElementById('wait_prompt').setAttribute('hidden', '');
-    document.getElementById('continue_prompt').removeAttribute('hidden');
 }
 
-function generate_instructions(instructions, enable_continue, wait_prompt, continue_prompt, button_text = 'Next') {
-    const delay_factor = 18; // should be around 20?
-    if (enable_continue) {
-        var full_text = instructions + '<div id="continue_prompt" hidden>' + continue_prompt + '</div>';
-    } else {
-        var full_text = instructions + '<div id="wait_prompt">' + wait_prompt + '</div>'
-            + '<div id="continue_prompt" hidden>' + continue_prompt + '</div>';
-    }
+function generateInstructions(instructions, enable_continue, button_text) {
+    const delay_factor = 18;
+
+    // Calculate delay based on text length
+    // Get the instruction text (handle both array and string)
+    const instructionText = Array.isArray(instructions) ? instructions.join(' ') : instructions;
+    // Remove HTML tags for accurate character count
+    const textLength = instructionText.replace(/<[^>]*>/g, '').length;
+    // Calculate delay: text length * delay_factor (milliseconds per character)
+    const calculatedDelay = enable_continue ? textLength * delay_factor : 0;
+
     return {
         type: jsPsychHtmlButtonResponse,
-        stimulus: full_text,
-        on_start: function () {
-            if (!enable_continue) {
-                setTimeout(allow_continue,
-                    instructions.length * delay_factor);
-            }
-        },
+        stimulus: standard_instr_style(instructions)[0],
         choices: [button_text],
-        // button.setAttribute('disabled', ')... button.removeAttribute('disabled')
-        button_html: function (choice) {
-            if (enable_continue) {
-                return '<button class="jspsych-btn" id="next-btn">' + choice + '</button>';
-            } else {
-                return '<button class="jspsych-btn" id="next-btn" disabled>' + choice + '</button>';
-            }
-        },
-        post_trial_gap: 400
+        enable_button_after: calculatedDelay,
+        //post_trial_gap: 400
     }
 }
 
@@ -72,14 +61,14 @@ var colorVisionCheckText = [
     `There will only be a few of these images, and it will take less than a minute. You should be able to correctly respond to these to be able to continue with the main experiment (and be fully paid).`
 ];
 
-var colorVisionCheck = {
-    type: "jsPsychInstructions",
-    pages: standard_instr_style(colorVisionCheckText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_color_vision_check" }
-};
+// var colorVisionCheck = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(colorVisionCheckText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_color_vision_check" }
+// };
 
 // Note: Ishihara plate trials would need to be added separately
 // Example structure:
@@ -168,18 +157,11 @@ INSTRUCTION PROCEDURES
 =============================================================== */
 
 // Setup instructions after fullscreen
-var instrStart = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(instrStartText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_setup_after_fullscreen" }
-};
+var instrStart = generateInstructions(instrStartText, false, 'Next');
 
 // Color alternation explanation with live example display
 var colorAlternationExplanation = {
-    type: instructionPractice,
+    type: { instructionPractice },
     instructionText: practice_instr_style(colorAlternationExplanationText)[0],
     attendedFeature: "color",
     attendedTempo: 300,
@@ -197,263 +179,263 @@ var colorAlternationExplanation = {
     data: { trialCategory: "instructions_color_alternation_explanation" }
 };
 
-// Size alternation explanation with live example display
-var sizeAlternationExplanation = {
-    type: instructionPractice,
-    instructionText: practice_instr_style(sizeAlternationExplanationText)[0],
-    attendedFeature: "size",
-    attendedTempo: 300,
-    distractorTempo: 300,
-    displayDuration: 5000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 300,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 999999, // Very slow so color doesn't change
-    responseKey: "", // No response needed for example
-    button_label_next: "Next",
-    button_delay: delay,
-    data: { trialCategory: "instructions_size_alternation_explanation" }
-};
+// // Size alternation explanation with live example display
+// var sizeAlternationExplanation = {
+//     type: instructionPractice,
+//     instructionText: practice_instr_style(sizeAlternationExplanationText)[0],
+//     attendedFeature: "size",
+//     attendedTempo: 300,
+//     distractorTempo: 300,
+//     displayDuration: 5000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 300,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 999999, // Very slow so color doesn't change
+//     responseKey: "", // No response needed for example
+//     button_label_next: "Next",
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_size_alternation_explanation" }
+// };
 
-// Fixation cross before examples (for other uses)
-var fixationCross = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: "<p style='color: white; font-size: 50px; text-align: center'>+</p>",
-    choices: 'NO_KEYS',
-    response_ends_trial: false,
-    trial_duration: 350,
-    data: { trialCategory: "fixation_cross" }
-};
+// // Fixation cross before examples (for other uses)
+// var fixationCross = {
+//     type: jsPsychHtmlKeyboardResponse,
+//     stimulus: "<p style='color: white; font-size: 50px; text-align: center'>+</p>",
+//     choices: 'NO_KEYS',
+//     response_ends_trial: false,
+//     trial_duration: 350,
+//     data: { trialCategory: "fixation_cross" }
+// };
 
-// Both features alternating explanation
-var bothFeaturesAlternatingExplanation = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(bothFeaturesAlternatingExplanationText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_both_features_alternating_explanation" }
-};
+// // Both features alternating explanation
+// var bothFeaturesAlternatingExplanation = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(bothFeaturesAlternatingExplanationText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_both_features_alternating_explanation" }
+// };
 
-// Both features alternating example demonstration
-var bothFeaturesAlternatingExample = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "color",
-    attendedTempo: 280,
-    distractorTempo: 320,
-    displayDuration: 8000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 320,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 280,
-    responseKey: " ",
-    distractorIsRandom: false,
-    data: { trialCategory: "example_both_features" }
-};
+// // Both features alternating example demonstration
+// var bothFeaturesAlternatingExample = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "color",
+//     attendedTempo: 280,
+//     distractorTempo: 320,
+//     displayDuration: 8000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 320,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 280,
+//     responseKey: " ",
+//     distractorIsRandom: false,
+//     data: { trialCategory: "example_both_features" }
+// };
 
-// Color rhythmic, size random explanation
-var colorRhythmicSizeRandomExplanation = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(colorRhythmicSizeRandomExplanationText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_color_rhythmic_size_random_explanation" }
-};
+// // Color rhythmic, size random explanation
+// var colorRhythmicSizeRandomExplanation = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(colorRhythmicSizeRandomExplanationText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_color_rhythmic_size_random_explanation" }
+// };
 
-// Color rhythmic, size random example demonstration
-var colorRhythmicSizeRandomExample = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "color",
-    attendedTempo: 700,
-    distractorTempo: 0, // Random
-    displayDuration: 10000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 0, // Random
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 700,
-    responseKey: " ",
-    distractorIsRandom: true,
-    data: { trialCategory: "example_color_rhythmic_size_random" }
-};
+// // Color rhythmic, size random example demonstration
+// var colorRhythmicSizeRandomExample = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "color",
+//     attendedTempo: 700,
+//     distractorTempo: 0, // Random
+//     displayDuration: 10000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 0, // Random
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 700,
+//     responseKey: " ",
+//     distractorIsRandom: true,
+//     data: { trialCategory: "example_color_rhythmic_size_random" }
+// };
 
-// Size rhythmic, color random explanation
-var sizeRhythmicColorRandomExplanation = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(sizeRhythmicColorRandomExplanationText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_size_rhythmic_color_random_explanation" }
-};
+// // Size rhythmic, color random explanation
+// var sizeRhythmicColorRandomExplanation = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(sizeRhythmicColorRandomExplanationText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_size_rhythmic_color_random_explanation" }
+// };
 
-// Size rhythmic, color random example demonstration
-var sizeRhythmicColorRandomExample = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "size",
-    attendedTempo: 700,
-    distractorTempo: 0, // Random
-    displayDuration: 10000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 700,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 0, // Random
-    responseKey: " ",
-    distractorIsRandom: true,
-    data: { trialCategory: "example_size_rhythmic_color_random" }
-};
+// // Size rhythmic, color random example demonstration
+// var sizeRhythmicColorRandomExample = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "size",
+//     attendedTempo: 700,
+//     distractorTempo: 0, // Random
+//     displayDuration: 10000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 700,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 0, // Random
+//     responseKey: " ",
+//     distractorIsRandom: true,
+//     data: { trialCategory: "example_size_rhythmic_color_random" }
+// };
 
-// Task explanation
-var taskExplanation = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(taskExplanationText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_task_explanation" }
-};
+// // Task explanation
+// var taskExplanation = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(taskExplanationText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_task_explanation" }
+// };
 
-// Practice color attended instruction
-var practiceColorAttendedInstruction = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(practiceColorAttendedInstructionText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    button_label_next: "Start",
-    data: { trialCategory: "instructions_practice_color_attended" }
-};
+// // Practice color attended instruction
+// var practiceColorAttendedInstruction = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(practiceColorAttendedInstructionText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     button_label_next: "Start",
+//     data: { trialCategory: "instructions_practice_color_attended" }
+// };
 
-// Practice display - Color attended, both rhythmic
-var practiceColorAttended = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "color",
-    attendedTempo: 700,
-    distractorTempo: 500,
-    displayDuration: 20000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 500,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 700,
-    responseKey: " ",
-    distractorIsRandom: false,
-    data: { trialCategory: "practice_color_attended" }
-};
+// // Practice display - Color attended, both rhythmic
+// var practiceColorAttended = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "color",
+//     attendedTempo: 700,
+//     distractorTempo: 500,
+//     displayDuration: 20000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 500,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 700,
+//     responseKey: " ",
+//     distractorIsRandom: false,
+//     data: { trialCategory: "practice_color_attended" }
+// };
 
-// Practice size attended instruction
-var practiceSizeAttendedInstruction = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(practiceSizeAttendedInstructionText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_practice_size_attended" }
-};
+// // Practice size attended instruction
+// var practiceSizeAttendedInstruction = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(practiceSizeAttendedInstructionText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_practice_size_attended" }
+// };
 
-// Practice display - Size attended, both rhythmic
-var practiceSizeAttended = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "size",
-    attendedTempo: 700,
-    distractorTempo: 500,
-    displayDuration: 20000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 700,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 500,
-    responseKey: " ",
-    distractorIsRandom: false,
-    data: { trialCategory: "practice_size_attended" }
-};
+// // Practice display - Size attended, both rhythmic
+// var practiceSizeAttended = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "size",
+//     attendedTempo: 700,
+//     distractorTempo: 500,
+//     displayDuration: 20000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 700,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 500,
+//     responseKey: " ",
+//     distractorIsRandom: false,
+//     data: { trialCategory: "practice_size_attended" }
+// };
 
-// Random alternation reminder
-var randomAlternationReminder = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(randomAlternationReminderText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_random_alternation_reminder" }
-};
+// // Random alternation reminder
+// var randomAlternationReminder = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(randomAlternationReminderText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_random_alternation_reminder" }
+// };
 
-// Practice size with random color instruction
-var practiceSizeWithRandomColorInstruction = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(practiceSizeWithRandomColorInstructionText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_practice_size_with_random_color" }
-};
+// // Practice size with random color instruction
+// var practiceSizeWithRandomColorInstruction = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(practiceSizeWithRandomColorInstructionText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_practice_size_with_random_color" }
+// };
 
-// Practice display - Size rhythmic, color random
-var practiceSizeWithRandomColor = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "size",
-    attendedTempo: 700,
-    distractorTempo: 0, // Random
-    displayDuration: 20000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 700,
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 0, // Random
-    responseKey: " ",
-    distractorIsRandom: true,
-    data: { trialCategory: "practice_size_rhythmic_color_random" }
-};
+// // Practice display - Size rhythmic, color random
+// var practiceSizeWithRandomColor = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "size",
+//     attendedTempo: 700,
+//     distractorTempo: 0, // Random
+//     displayDuration: 20000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 700,
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 0, // Random
+//     responseKey: " ",
+//     distractorIsRandom: true,
+//     data: { trialCategory: "practice_size_rhythmic_color_random" }
+// };
 
-// Practice color with random size instruction
-var practiceColorWithRandomSizeInstruction = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(practiceColorWithRandomSizeInstructionText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    data: { trialCategory: "instructions_practice_color_with_random_size" }
-};
+// // Practice color with random size instruction
+// var practiceColorWithRandomSizeInstruction = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(practiceColorWithRandomSizeInstructionText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     data: { trialCategory: "instructions_practice_color_with_random_size" }
+// };
 
-// Practice display - Color rhythmic, size random
-var practiceColorWithRandomSize = {
-    type: rhytmicFeatureChangeTask,
-    attendedFeature: "color",
-    attendedTempo: 700,
-    distractorTempo: 0, // Random
-    displayDuration: 20000,
-    rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
-    sizeChangeRate: paramsGeneral.sizeChangeRate,
-    sizeTempo: 0, // Random
-    baseColor: paramsGeneral.baseColor,
-    colorChangeRate: paramsGeneral.colorChangeRate,
-    colorTempo: 700,
-    responseKey: " ",
-    distractorIsRandom: true,
-    data: { trialCategory: "practice_color_rhythmic_size_random" }
-};
+// // Practice display - Color rhythmic, size random
+// var practiceColorWithRandomSize = {
+//     type: rhytmicFeatureChangeTask,
+//     attendedFeature: "color",
+//     attendedTempo: 700,
+//     distractorTempo: 0, // Random
+//     displayDuration: 20000,
+//     rectBaseSize: paramsGeneral.rectBaseSize || [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+//     sizeChangeRate: paramsGeneral.sizeChangeRate,
+//     sizeTempo: 0, // Random
+//     baseColor: paramsGeneral.baseColor,
+//     colorChangeRate: paramsGeneral.colorChangeRate,
+//     colorTempo: 700,
+//     responseKey: " ",
+//     distractorIsRandom: true,
+//     data: { trialCategory: "practice_color_rhythmic_size_random" }
+// };
 
-// Final instructions - ready to start
-var instrEnd = {
-    type: jsPsychInstructions,
-    pages: standard_instr_style(finalInstructionsText),
-    show_clickable_nav: true,
-    allow_backward: false,
-    button_delay: delay,
-    button_label_next: "Start",
-    data: { trialCategory: "instructions_end" }
-};
+// // Final instructions - ready to start
+// var instrEnd = {
+//     type: jsPsychInstructions,
+//     pages: standard_instr_style(finalInstructionsText),
+//     show_clickable_nav: true,
+//     allow_backward: false,
+//     button_delay: delay,
+//     button_label_next: "Start",
+//     data: { trialCategory: "instructions_end" }
+// };
 
 /*
 ===============================================================
@@ -464,33 +446,33 @@ instructions = [
     // colorVisionCheck,                      // Color vision check instructions
     // ishiharaPlate1,                     // Add Ishihara plates here
     // ishiharaPlate2,                     // Add Ishihara plates here
-    enterFullscreen,                        // Enter fullscreen
+    // enterFullscreen,                        // Enter fullscreen
     instrStart,                      // Setup instructions after fullscreen
     colorAlternationExplanation,            // Color alternation explanation with live example
-    sizeAlternationExplanation,             // Size alternation explanation with live example
-    bothFeaturesAlternatingExplanation,     // Both features alternating explanation
-    //fixationCross,                          // Fixation cross before example
-    bothFeaturesAlternatingExample,         // Both features alternating example demonstration
-    // colorRhythmicSizeRandomExplanation,     // Color rhythmic, size random explanation
-    //fixationCross,                          // Fixation cross before example
-    // colorRhythmicSizeRandomExample,         // Color rhythmic, size random example demonstration
-    // sizeRhythmicColorRandomExplanation,     // Size rhythmic, color random explanation
-    // fixationCross,                          // Fixation cross before example
-    // sizeRhythmicColorRandomExample,         // Size rhythmic, color random example demonstration
-    taskExplanation,                        // Task explanation
-    practiceColorAttendedInstruction,       // Practice color attended instruction
-    // fixationCross,                          // Fixation cross before practice
-    practiceColorAttended,                  // Practice display - Color attended, both rhythmic
-    practiceSizeAttendedInstruction,        // Practice size attended instruction
-    //  fixationCross,                          // Fixation cross before practice
-    practiceSizeAttended,                   // Practice display - Size attended, both rhythmic
-    //randomAlternationReminder,              // Random alternation reminder
-    // practiceSizeWithRandomColorInstruction, // Practice size with random color instruction
-    // fixationCross,                          // Fixation cross before practice
-    // practiceSizeWithRandomColor,            // Practice display - Size rhythmic, color random
-    // practiceColorWithRandomSizeInstruction, // Practice color with random size instruction
-    // fixationCross,                          // Fixation cross before practice
-    // practiceColorWithRandomSize,            // Practice display - Color rhythmic, size random
-    instrEnd,                           // Final instructions - ready to start
+    // sizeAlternationExplanation,             // Size alternation explanation with live example
+    // bothFeaturesAlternatingExplanation,     // Both features alternating explanation
+    // //fixationCross,                          // Fixation cross before example
+    // bothFeaturesAlternatingExample,         // Both features alternating example demonstration
+    // // colorRhythmicSizeRandomExplanation,     // Color rhythmic, size random explanation
+    // //fixationCross,                          // Fixation cross before example
+    // // colorRhythmicSizeRandomExample,         // Color rhythmic, size random example demonstration
+    // // sizeRhythmicColorRandomExplanation,     // Size rhythmic, color random explanation
+    // // fixationCross,                          // Fixation cross before example
+    // // sizeRhythmicColorRandomExample,         // Size rhythmic, color random example demonstration
+    // taskExplanation,                        // Task explanation
+    // practiceColorAttendedInstruction,       // Practice color attended instruction
+    // // fixationCross,                          // Fixation cross before practice
+    // practiceColorAttended,                  // Practice display - Color attended, both rhythmic
+    // practiceSizeAttendedInstruction,        // Practice size attended instruction
+    // //  fixationCross,                          // Fixation cross before practice
+    // practiceSizeAttended,                   // Practice display - Size attended, both rhythmic
+    // //randomAlternationReminder,              // Random alternation reminder
+    // // practiceSizeWithRandomColorInstruction, // Practice size with random color instruction
+    // // fixationCross,                          // Fixation cross before practice
+    // // practiceSizeWithRandomColor,            // Practice display - Size rhythmic, color random
+    // // practiceColorWithRandomSizeInstruction, // Practice color with random size instruction
+    // // fixationCross,                          // Fixation cross before practice
+    // // practiceColorWithRandomSize,            // Practice display - Color rhythmic, size random
+    // instrEnd,                           // Final instructions - ready to start
 ]
 
