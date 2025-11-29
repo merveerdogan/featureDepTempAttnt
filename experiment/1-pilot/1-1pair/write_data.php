@@ -6,9 +6,9 @@ $folderPath = $post_data['folder_name'];
 $fileName = $post_data['filename'] . ".csv";
 $data = $post_data['filedata'];
 
-// Ensure the folder name ends with a directory separator for proper path construction
+// Ensure the folder exists - create recursively if needed
 if (!is_dir($folderPath)) {
-    mkdir($folderPath); // Use default permissions
+    mkdir($folderPath, 0777, true); // Recursive creation with full permissions
 }
 
 // Construct the full path with filename, ensuring correct directory separators

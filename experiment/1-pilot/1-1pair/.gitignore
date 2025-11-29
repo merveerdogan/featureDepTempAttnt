@@ -6,8 +6,8 @@ data/
 .DS_Store
 **/.DS_Store
 
-# PHP file for local data saving (not needed on Pavlovia)
-write_data.php
+# PHP file for local data saving - NOW NEEDED for GitLab
+# write_data.php
 
 # Editor and IDE files
 .vscode/

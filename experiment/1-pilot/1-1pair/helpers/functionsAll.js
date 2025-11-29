@@ -33,7 +33,7 @@ var check_device = {
             check_device.data.mobile = true;
         } else {
             check_device.stimulus =
-                `<div style='display: inline-block; color: ` + text_color + `; margin: 0 auto; padding: 10px 200px 10px 200px; text-align: left'> Please note that this experiment is only designed to work from a computer or laptop.  Please <strong> do not </strong> continue if you are using a phone, tablet, or other mobile device.  If you are on a phone, tablet or other mobile device you will need to return to Prolific and click "stop without completing".  <br> <br> If you are currently seeing this page from a laptop or computer, please click on the "Continue" button.<br><br>`;
+                standard_instr_style(`Please note that this experiment is only designed to work from a computer or laptop.  Please <strong> do not </strong> continue if you are using a phone, tablet, or other mobile device.  If you are on a phone, tablet or other mobile device you will need to return to Prolific and click "stop without completing".  <br> <br> If you are currently seeing this page from a laptop or computer, please click on the "Continue" button.`);
             check_device.choices = ["Continue"];
             check_device.data.mobile = false;
         }
@@ -190,8 +190,18 @@ STYLE FUNCTIONS
 ===============================================================
 */
 function standard_instr_style(x) {
-    return "<div style='display: flex; align-items: center; justify-content: center; min-height: 100vh; width: 100%;'><div style='color: " + text_color + " !important; padding: 10px 200px 10px 200px; text-align: left; max-width: 800px;'>" + x + "</div></div>";
+    // Handle both arrays and single strings
+    if (Array.isArray(x)) {
+        return x.map(function (text) {
+            return "<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 80vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + text + "</div></div>";
+        });
+    } else {
+        return ["<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 80vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + x + "</div></div>"];
+    }
+}
 
+function practice_instr_style(x) {
+    return ["<div class='jspsych-display-element' style='justify-content: center; align-items: center; min-height: 10vh; width: 100%;'><div style='display: inline-block; margin: 0 auto; color: " + text_color + "; padding: 10px 200px 10px 200px; text-align: left'>" + x + "</div></div>"];
 }
 
 function change_background_color(color) {
@@ -292,20 +302,20 @@ var survey = {
 var enter_fullscreen = {
     type: 'fullscreen',
     pointer_lock: true,
-    message: `<p><div style='display: inline-block; color:` + text_color + `; margin: 0 auto; padding: 10px 200px 10px 200px; text-align: left'>This experiment needs to be completed in full-screen mode. <br><br> Clicking on the "Continue" button should bring the experiment to full-screen mode.<br> (Don't worry, we'll take you out of full-screen mode when the experiment is over.)<br><br>Once you are in full-screen mode, please do not exit full-screen mode or minimize this screen until the experiment is completed.<br>(Additionally, do not press your browser's "back" button as this will end the experiment without giving you credit.)<br><br>`,
+    message: standard_instr_style(`This experiment needs to be completed in full-screen mode. <br><br> Clicking on the "Continue" button should bring the experiment to full-screen mode.<br> (Don't worry, we'll take you out of full-screen mode when the experiment is over.)<br><br>Once you are in full-screen mode, please do not exit full-screen mode or minimize this screen until the experiment is completed.<br>(Additionally, do not press your browser's "back" button as this will end the experiment without giving you credit.)<br><br>`),
     on_finish: function (data) {
         [w, h] = [window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth, window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight]
         center = [w / 2, h / 2]
     },
-    data: { trial_category: 'Other' },
+    data: { trial_category: 'enter_fullscreen' },
 }
 
 /*------Exit Fullscreen Function-----*/
 var exit_fullscreen = {
     type: 'fullscreen',
     fullscreen_mode: false,
-    data: { trial_category: 'Other' },
-    message: '<p>div<style= "color:' + text_color + '">The experiment will switch out of full-screen mode when you press the button below</p>'
+    data: { trial_category: 'exit_fullscreen' },
+    message: standard_instr_style(`The experiment will switch out of full-screen mode when you press the button below`)
 }
 
 /*------Turn off Cursor Function-----*/
@@ -405,22 +415,20 @@ ALL INSTRUCTION TEXT FUNCTIONS
 */
 function surveyForm() {
     var surveyContent =
-        "<div style='width: 100%; color: " + text_color + "; text-align: center'><div style='display: inline-block; margin: 0 auto; padding: 10px 200px 10px 200px; text-align: left'>" +
-        "<p>We wanted to provide a heads-up that the end of the experiment will consist of an anonymous survey with multiple questions. " +
-        "A few questions are open-ended questions where you need to type 1-2 sentences. Sometimes participants do not like answering open-ended questions and tend to quit a survey once they see such questions. " +
-        "If a sizable number of people quit a survey halfway, the responses will no longer be useful. Our research depends on good quality responses. Thus, please make sure you do not mind open-ended questions before continuing with experiment.</p>" +
-        "<p><i><strong>Press 'y'</strong> on your keyboard if you agree to answer the open-ended questions at the end of the experiment.</i><br>" +
-        "</div>"
+        standard_instr_style(`We wanted to provide a heads-up that the end of the experiment will consist of an anonymous survey with multiple questions.
+        "A few questions are open-ended questions where you need to type 1-2 sentences. Sometimes participants do not like answering open-ended questions and tend to quit a survey once they see such questions. <br> <br>
+        If a sizable number of people quit a survey halfway, the responses will no longer be useful. Our research depends on good quality responses. Thus, please make sure you do not mind open-ended questions before continuing with experiment.<br> <br>
+        <p><i><strong>Press 'y'</strong> on your keyboard if you agree to answer the open-ended questions at the end of the experiment.</i><br>`)
     return surveyContent
 };
 
 function debriefForm() {
     var debriefContent = '<p>Finally, we just have a couple questions for you!<br>Please note that you must answer <strong>ALL</strong> the questions before clicking "Continue". ' +
         "<div style='width: 80%; text-align: left; margin: 0 auto'>" +
-        '<p>Age: <br><input name="age" required type="number"  max="100" min="18" style="width: 80px; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required>' +
+        '<p>Age: <br><input name="age" required type="number" max="100" min="18" style="width: 80px; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required>' +
         '<p>Please select your gender:<br><input type="radio" required id="male" name="gender" value="male"><label for="male">Male</label><br><input type="radio" id="female" name="gender" value="female"><label for="female">Female</label><br><input type="radio" id="other" name="gender" value="other"><label for="other">Other</label><br><input type="radio" id="not_say" name="gender" value="Prefer not to say"><label for="not_say">Prefer not to say</label>' +
         '<p>In 1-2 sentences, what do you think this experiment was testing? <br><input name="testing" type="text" size="50" style="width: 100%;  border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required>' +
-        '<p>Using the slider below, on a scale of 1-100 (with 1 being very distracted, and 100 being very focused), how well did you pay attention to the experiment?  (This will not affect whether you receive credit or compensation.) <br> <p style="text-align:left;">Very Distracted <span style="float:right;">Very Focused</span></p> <input type="range" value="50" min="1" max="100" name = "attention" class="slider" required oninput="this.nextElementSibling.value = this.value"> <output id = "attntion_out"  style="text-align:center; font-size: 1.6vw">_</output> </p>' + '<p>Did you find yourself using a strategy while you were doing the experiment? If yes, please describe with 1-2 sentences.<br><input name="strategy" type="text" size="50" style="width: 100%; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required></p>' + '<p>Is there anything else we should know (either about you or how you did the experiment) that may have had an impact on your results? <br><input name="other" type="text" size="50" style="width: 100%; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required></p>' +
+        '<p>Using the slider below, on a scale of 1-100 (with 1 being very distracted, and 100 being very focused), how well did you pay attention to the experiment?  (This will not affect whether you receive credit or compensation.) <br> <p style="text-align:left;">Very Distracted <span style="float:right;">Very Focused</span></p> <input type="range" value="50" min="1" max="100" name="attention" class="slider" required oninput="this.nextElementSibling.value = this.value"> <output id="attntion_out" style="text-align:center; font-size: 1.6vw">_</output> </p>' + '<p>Did you find yourself using a strategy while you were doing the experiment? If yes, please describe with 1-2 sentences.<br><input name="strategy" type="text" size="50" style="width: 100%; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required></p>' + '<p>Is there anything else we should know (either about you or how you did the experiment) that may have had an impact on your results? <br><input name="other" type="text" size="50" style="width: 100%; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required></p>' +
         '<p> We do our best to make sure this experiment displays the same for all monitor configurations. Where there any parts of the experiment where words or text were cut off or misaligned?  If so, do you remember where? <br><input name="errors" type="text" size="50" style="width: 100%; border-radius: 4px; padding: 10px 10px; margin: 8px 0; border: 1px solid #ccc; font-size: 15px" required>' +
         "</div>"
     return debriefContent
@@ -452,7 +460,7 @@ function consentForm() {
             "</div>";
 
         // Try to open the consent in a new tab immediately (may be blocked by popup blockers).
-        content += "<script>(function(){try{var w=window.open('" + qURL + "','_blank'); if(!w){/*popup blocked*/} }catch(e){} })();</script>";
+        content += "<script>(function(){try{var w=window.open('" + qURL + "','_blank'); if(!w){/*popup blocked*/} }catch(e){ } })();</script>";
         return content;
     }
 

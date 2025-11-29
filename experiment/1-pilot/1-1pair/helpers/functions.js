@@ -23,7 +23,7 @@ var isMobile = navigator.userAgent.toLowerCase().match(/mobile/i),
     isiPhone = navigator.userAgent.toLowerCase().match(/iphone/i),
     isiPad = navigator.userAgent.toLowerCase().match(/ipad/i);
 var check_device = {
-    type: 'html-button-response',
+    type: 'jsPsychHtmlButtonResponse',
     choices: [' '],
     on_start: function (check_device) {
         if (isAndroid || isiPad || isiPhone || isMobile || isTablet) {
@@ -38,7 +38,7 @@ var check_device = {
             check_device.data.mobile = false;
         }
     },
-    data: { trial_category: 'Other' },
+    data: { trial_category: 'check_device' },
     on_finish(data) {
         if (data.mobile) {
             jsPsych.endExperiment()
@@ -72,7 +72,7 @@ var browserInfo = getBrowserInfo();
 
 /*------Limit browser to Google Chrome-----*/
 var limit_browser = {
-    type: 'html-button-response',
+    type: 'jsPsychHtmlButtonResponse',
     choices: [' '],
     on_start: function (check_device) {
         if (browserInfo.browser !== 'Chrome') {
@@ -146,6 +146,8 @@ function getRandomInt(max) {
 function round(value, decimals = 2) {
     return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
+
+
 /*
 ===============================================================
 GENERAL HELPER FUNCTIONS
@@ -279,7 +281,7 @@ INTRO SECTION
 */
 /*------Consent Function-----*/
 var consent = {
-    type: 'html-keyboard-response',
+    type: 'jsPsychHtmlKeyboardResponse',
     choices: ['y'],
     stimulus: consentForm(), //this is defined at the end of this code 
     prompt: "<div style ='color: " + text_color + "'>Please open the consent form (opens in a new tab), complete it, then press the 'Y' key to continue.",
@@ -292,7 +294,7 @@ var consent = {
 
 /*------Survey Function-----*/
 var survey = {
-    type: 'html-keyboard-response',
+    type: 'jsPsychHtmlKeyboardResponse',
     stimulus: surveyForm(), //this is defined at the end of this code
     choices: ['y'],
     data: { trial_category: 'Other' }
@@ -300,7 +302,7 @@ var survey = {
 
 /*------Enter Fullscreen Function-----*/
 var enter_fullscreen = {
-    type: 'fullscreen',
+    type: 'jsPsychFullscreen',
     pointer_lock: true,
     message: standard_instr_style(`This experiment needs to be completed in full-screen mode. <br><br> Clicking on the "Continue" button should bring the experiment to full-screen mode.<br> (Don't worry, we'll take you out of full-screen mode when the experiment is over.)<br><br>Once you are in full-screen mode, please do not exit full-screen mode or minimize this screen until the experiment is completed.<br>(Additionally, do not press your browser's "back" button as this will end the experiment without giving you credit.)<br><br>`),
     on_finish: function (data) {
@@ -312,7 +314,7 @@ var enter_fullscreen = {
 
 /*------Exit Fullscreen Function-----*/
 var exit_fullscreen = {
-    type: 'fullscreen',
+    type: 'jsPsychFullscreen',
     fullscreen_mode: false,
     data: { trial_category: 'exit_fullscreen' },
     message: standard_instr_style(`The experiment will switch out of full-screen mode when you press the button below`)
@@ -320,7 +322,7 @@ var exit_fullscreen = {
 
 /*------Turn off Cursor Function-----*/
 var cursor_off = {
-    type: 'call-function',
+    type: 'jsPsychCallFunction',
     func: function () {
         document.body.style.cursor = "none";
     }
@@ -328,7 +330,7 @@ var cursor_off = {
 
 /*------Turn on Cursor Function-----*/
 var cursor_on = {
-    type: 'call-function',
+    type: 'jsPsychCallFunction',
     func: function () {
         document.body.style.cursor = "auto";
     }
@@ -356,7 +358,7 @@ var finishing = {
 var include = true;
 var exp_complete = false;
 var debreif_qs = {
-    type: 'survey-html-form',
+    type: 'jsPsychSurveyHtmlForm',
     html: debriefForm(), //this is defined at the end of this code
     required_names: ["attntion_out"],
     data: { trial_category: 'debreif' },
@@ -401,9 +403,9 @@ var debreif_qs = {
 
 /*------ Closing Text with Completion Code -----*/
 var closing = {
-    type: 'html-keyboard-response',
+    type: 'jsPsychHtmlKeyboardResponse',
     stimulus: closingText(), //this is defined at the end of this code
-    choices: jsPsych.NO_KEYS,
+    choices: 'NO_KEYS',
     delay: 1000,
 };
 
