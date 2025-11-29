@@ -1,32 +1,30 @@
-# Data files - don't upload to Pavlovia (data is stored on Pavlovia servers)
-data/
-*.csv
+# Ignore deployment folder
+_deploy/
 
-# Mac system files
+# Ignore macOS system files
 .DS_Store
-**/.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# PHP file for local data saving - NOW NEEDED for GitLab
-# write_data.php
+# Ignore data files (optional - uncomment if you don't want to track data)
+# data/
+dataLocal/
 
-# Editor and IDE files
-.vscode/
-.idea/
+# Ignore editor files
 *.swp
 *.swo
 *~
+.vscode/
+.idea/
 
-# Log files
-*.log
+# Ignore node modules if any
+node_modules/
 
-# Temporary files
+# Ignore temporary files
 *.tmp
-*.temp
-
-# OS files
-Thumbs.db
-desktop.ini
-
-# Deployment scripts and config (keep local, don't push to Pavlovia)
-_deploy/
+*.log
 

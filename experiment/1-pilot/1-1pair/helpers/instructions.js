@@ -2,36 +2,54 @@
 Feature-Dependent Temporal Attention (Color & Size) - Pilot V1.1
 */
 
-function allow_continue() {
-    document.getElementById('next-btn').removeAttribute('disabled');
-}
-
-function generateInstructions(instructions, enable_continue, button_text) {
-    const delay_factor = 18;
-
-    // Calculate delay based on text length
-    // Get the instruction text (handle both array and string)
-    const instructionText = Array.isArray(instructions) ? instructions.join(' ') : instructions;
-    // Remove HTML tags for accurate character count
-    const textLength = instructionText.replace(/<[^>]*>/g, '').length;
-    // Calculate delay: text length * delay_factor (milliseconds per character)
-    const calculatedDelay = enable_continue ? textLength * delay_factor : 0;
-
-    return {
-        type: jsPsychHtmlButtonResponse,
-        stimulus: standard_instr_style(instructions)[0],
-        choices: [button_text],
-        enable_button_after: calculatedDelay,
-        //post_trial_gap: 400
-    }
-}
-
-
 /*
 ===============================================================
 GENERAL INTRODUCTION PROCEDURE
 =============================================================== */
+/* ------Check Device (to accept only desktop)-----*/
+var isMobile = navigator.userAgent.toLowerCase().match(/mobile/i),
+    isTablet = navigator.userAgent.toLowerCase().match(/tablet/i),
+    isAndroid = navigator.userAgent.toLowerCase().match(/android/i),
+    isiPhone = navigator.userAgent.toLowerCase().match(/iphone/i),
+    isiPad = navigator.userAgent.toLowerCase().match(/ipad/i);
+var checkDevice = {
+    type: jsPsychHtmlButtonResponse,
+    choices: [' '],
+    on_start: function (checkDevice) {
+        if (isAndroid || isiPad || isiPhone || isMobile || isTablet) {
+            checkDevice.stimulus =
+                `<div style='display: inline-block; color: ` + text_color + `; margin: 0 auto; padding: 10px 200px 10px 200px; text-align: left'> Oops, it looks like you are on a tablet, phone or other mobile device.  This experiment can only be run from a computer or laptop.  Please return to Prolific and click "stop without completing."   If you feel like this message is in error, you can contact the study author at merve.erdogan@yale.edu.<br><br> Press on the "Exit" button to exit this experiment.`;
+            checkDevice.choices = ["Exit"];
+            checkDevice.data.mobile = true;
+        } else {
+            checkDevice.stimulus =
+                standard_instr_style(`Please note that this experiment is only designed to work from a computer or laptop.  Please <strong> do not </strong> continue if you are using a phone, tablet, or other mobile device.  If you are on a phone, tablet or other mobile device you will need to return to Prolific and click "stop without completing".  <br> <br> If you are currently seeing this page from a laptop or computer, please click on the "Continue" button.`);
+            checkDevice.choices = ["Continue"];
+            checkDevice.data.mobile = false;
+        }
+    },
+    data: { trial_category: 'introInstructions' },
+    on_finish(data) {
+        if (data.mobile) {
+            jsPsych.endExperiment()
+        }
 
+    }
+}
+
+/* ------Open Ended Questions-----*/
+var openEndedQuestionsText = [
+    `We wanted to provide a heads-up that the end of the experiment will consist of an anonymous survey with multiple questions. A few questions are open-ended questions where you need to type 1-2 sentences. Sometimes participants do not like answering open-ended questions and tend to quit a survey once they see such questions. <br> <br> If a sizable number of people quit a survey halfway, the responses will no longer be useful. Our research depends on good quality responses. Thus, please make sure you do not mind open-ended questions before continuing with experiment.<br> <br> <p><i><strong>Press 'y'</strong> on your keyboard if you agree to answer the open-ended questions at the end of the experiment.</i><br>`
+];
+
+var openEndedQuestions = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: standard_instr_style(openEndedQuestionsText)[0],
+    choices: ['y'],
+    data: { trial_category: 'introInstructions' },
+}
+
+/* ------Enter Fullscreen-----*/
 var enterFullscreenText = [
     `This experiment needs to be completed in full-screen mode. <br><br> Clicking on the "Continue" button should bring the experiment to full-screen mode.<br> (Don't worry, we'll take you out of full-screen mode when the experiment is over.)<br><br>Once you are in full-screen mode, please do not exit full-screen mode or minimize this screen until the experiment is completed.<br>(Additionally, do not press your browser's "back" button as this will end the experiment without giving you credit.)<br><br>`
 ];
@@ -43,7 +61,7 @@ var enterFullscreen = {
         [w, h] = [window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth, window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight]
         screenCenter = [w / 2, h / 2]
     },
-    data: { trialCategory: 'Other' },
+    data: { trial_category: 'introInstructions' },
 }
 
 /*
@@ -64,7 +82,7 @@ var colorVisionCheckText = [
 //     show_clickable_nav: true,
 //     allow_backward: false,
 //     button_delay: delay,
-//     data: { trialCategory: "instructions_color_vision_check" }
+//     data: { trial_category: "instructions_color_vision_check" }
 // };
 
 // Note: Ishihara plate trials would need to be added separately
@@ -74,7 +92,7 @@ var colorVisionCheckText = [
 //     stimulus: "<img src='path/to/ishihara1.jpg' style='max-width: 800px; max-height: 600px;'>",
 //     choices: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X'],
 //     prompt: "<p style='color: white; font-size: 20px;'>Type the number you see (or 'X' if you cannot see a number):</p>",
-//     data: { trialCategory: "ishihara_plate" }
+//     data: { trial_category: "ishihara_plate" }
 // };
 
 /*
@@ -154,13 +172,10 @@ INSTRUCTION PROCEDURES
 =============================================================== */
 
 // Setup instructions after fullscreen
-var instrStart = generateInstructions(instrStartText, false, 'Next');
+var instrStart = generateInstructions(instrStartText, false, 'Next', 'introInstructions');
 
 // Color alternation explanation with live example display
 var colorAlternationExplanation = {
-    on_start: function () {
-        console.log('Entering color alternation explanation');
-    },
     type: instructionPractice,
     instructionText: practice_instr_style(colorAlternationExplanationText)[0],
     attendedFeature: "color",
@@ -176,7 +191,7 @@ var colorAlternationExplanation = {
     responseKey: "", // No response needed for example
     button_label_next: "Next",
     button_delay: delay,
-    data: { trialCategory: "instructions_color_alternation_explanation" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Size alternation explanation with live example display
@@ -196,7 +211,7 @@ var sizeAlternationExplanation = {
     responseKey: "", // No response needed for example
     button_label_next: "Next",
     button_delay: delay,
-    data: { trialCategory: "instructions_size_alternation_explanation" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Fixation cross before examples (for other uses)
@@ -206,11 +221,11 @@ var sizeAlternationExplanation = {
 //     choices: 'NO_KEYS',
 //     response_ends_trial: false,
 //     trial_duration: 350,
-//     data: { trialCategory: "fixation_cross" }
+//     data: { trial_category: "fixation_cross" }
 // };
 
 // Both features alternating explanation
-var bothFeaturesAlternatingExplanation = generateInstructions(bothFeaturesAlternatingExplanationText, false, 'Next');
+var bothFeaturesAlternatingExplanation = generateInstructions(bothFeaturesAlternatingExplanationText, false, 'Next', 'introInstructions');
 
 
 // Both features alternating example demonstration
@@ -228,11 +243,11 @@ var bothFeaturesAlternatingExample = {
     colorTempo: 280,
     responseKey: " ",
     distractorIsRandom: false,
-    data: { trialCategory: "example_both_features" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Color rhythmic, size random explanation
-var colorRhythmicSizeRandomExplanation = generateInstructions(colorRhythmicSizeRandomExplanationText, false, 'Next');
+var colorRhythmicSizeRandomExplanation = generateInstructions(colorRhythmicSizeRandomExplanationText, false, 'Next', 'introInstructions');
 
 // Color rhythmic, size random example demonstration
 var colorRhythmicSizeRandomExample = {
@@ -249,11 +264,11 @@ var colorRhythmicSizeRandomExample = {
     colorTempo: 700,
     responseKey: " ",
     distractorIsRandom: true,
-    data: { trialCategory: "example_color_rhythmic_size_random" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Size rhythmic, color random explanation
-var sizeRhythmicColorRandomExplanation = generateInstructions(sizeRhythmicColorRandomExplanationText, false, 'Next');
+var sizeRhythmicColorRandomExplanation = generateInstructions(sizeRhythmicColorRandomExplanationText, false, 'Next', 'introInstructions');
 
 // Size rhythmic, color random example demonstration
 var sizeRhythmicColorRandomExample = {
@@ -270,14 +285,14 @@ var sizeRhythmicColorRandomExample = {
     colorTempo: 0, // Random
     responseKey: " ",
     distractorIsRandom: true,
-    data: { trialCategory: "example_size_rhythmic_color_random" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Task explanation
 var taskExplanation = generateInstructions(taskExplanationText, false, 'Next');
 
 // Practice color attended instruction
-var practiceColorAttendedInstruction = generateInstructions(practiceColorAttendedInstructionText, false, 'Start');
+var practiceColorAttendedInstruction = generateInstructions(practiceColorAttendedInstructionText, false, 'Start', 'introInstructions');
 
 // Practice display - Color attended, both rhythmic
 var practiceColorAttended = {
@@ -294,11 +309,11 @@ var practiceColorAttended = {
     colorTempo: 700,
     responseKey: " ",
     distractorIsRandom: false,
-    data: { trialCategory: "practice_color_attended" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Practice size attended instruction
-var practiceSizeAttendedInstruction = generateInstructions(practiceSizeAttendedInstructionText, false, 'Start');
+var practiceSizeAttendedInstruction = generateInstructions(practiceSizeAttendedInstructionText, false, 'Start', 'introInstructions');
 
 // Practice display - Size attended, both rhythmic
 var practiceSizeAttended = {
@@ -315,14 +330,14 @@ var practiceSizeAttended = {
     colorTempo: 500,
     responseKey: " ",
     distractorIsRandom: false,
-    data: { trialCategory: "practice_size_attended" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Random alternation reminder
-var randomAlternationReminder = generateInstructions(randomAlternationReminderText, false, 'Next');
+var randomAlternationReminder = generateInstructions(randomAlternationReminderText, false, 'Next', 'introInstructions');
 
 // Practice size with random color instruction
-var practiceSizeWithRandomColorInstruction = generateInstructions(practiceSizeWithRandomColorInstructionText, false, 'Start');
+var practiceSizeWithRandomColorInstruction = generateInstructions(practiceSizeWithRandomColorInstructionText, false, 'Start', 'introInstructions');
 
 // Practice display - Size rhythmic, color random
 var practiceSizeWithRandomColor = {
@@ -339,11 +354,11 @@ var practiceSizeWithRandomColor = {
     colorTempo: 0, // Random
     responseKey: " ",
     distractorIsRandom: true,
-    data: { trialCategory: "practice_size_rhythmic_color_random" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Practice color with random size instruction
-var practiceColorWithRandomSizeInstruction = generateInstructions(practiceColorWithRandomSizeInstructionText, false, 'Start');
+var practiceColorWithRandomSizeInstruction = generateInstructions(practiceColorWithRandomSizeInstructionText, false, 'Start', 'introInstructions');
 
 // Practice display - Color rhythmic, size random
 var practiceColorWithRandomSize = {
@@ -360,11 +375,11 @@ var practiceColorWithRandomSize = {
     colorTempo: 700,
     responseKey: " ",
     distractorIsRandom: true,
-    data: { trialCategory: "practice_color_rhythmic_size_random" }
+    data: { trial_category: "introInstructions" }
 };
 
 // Final instructions - ready to start
-var instrEnd = generateInstructions(finalInstructionsText, false, 'Start');
+var instrEnd = generateInstructions(finalInstructionsText, false, 'Start', 'introInstructions');
 
 /*
 ===============================================================
@@ -375,7 +390,6 @@ instructions = [
     // colorVisionCheck,                      // Color vision check instructions
     // ishiharaPlate1,                     // Add Ishihara plates here
     // ishiharaPlate2,                     // Add Ishihara plates here
-    // enterFullscreen,                        // Enter fullscreen
     instrStart,                      // Setup instructions after fullscreen
     colorAlternationExplanation,            // Color alternation explanation with live example
     sizeAlternationExplanation,             // Size alternation explanation with live example

@@ -34,7 +34,7 @@ if (shortVersion == true) {
 }
 
 debug = false;
-runIntro = false;
+runIntro = true;
 runInstr = true;
 
 //instruction delays & screen locking
@@ -72,20 +72,15 @@ paramsGeneral = {
 /*=============================   
 ONLINE EXPERIMENT PARAMETERS
 ===============================*/
-let estTotalRunTime = 15;
+let estTotalRunTime = 10;
 let exp_compensation = "$" + (estTotalRunTime * .20).toFixed(2).toString();
-let completion_code = 'CGPSIGCY';
+let completion_code = 'C1HEMR2R';
 let study_title = 'Tap with the beat!'
 let qualtricsConsentURL = "https://yalesurvey.ca1.qualtrics.com/jfe/form/SV_069acy26ux5gDZ4";
 
-var path = window.location.pathname;
-var page = path.split("/").pop();
-expt_name = page.replace(".html", "");
-exp_version = "p1.1"
-expt_name = expt_name + '_' + exp_version;
 
-save_folder_full = 'data/full/' + expt_name + '';
-save_folder_filtered = 'data/filtered/' + expt_name + '';
+exp_version = "p1.1"
+
 let exp_date = new Date().toISOString().split('T')[0];
 
 

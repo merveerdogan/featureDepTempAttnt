@@ -22,7 +22,9 @@ Experiment details:
     <script type="text/javascript" src="lib/vendors/jspsych-7.1.2/plugin-fullscreen.js"></script>
     <script type="text/javascript" src="lib/vendors/jspsych-7.1.2/plugin-browser-check.js"></script>
     <script type="text/javascript" src="lib/vendors/jspsych-7.1.2/plugin-survey-html-form.js"></script>
+    <script type="text/javascript" src="lib/vendors/jspsych-7.1.2/plugin-call-function.js"></script>
     <script type="text/javascript" src="lib/jspsych-7-pavlovia-2022.1.1.js"></script>
+
     <link rel="stylesheet" type="text/css" href="lib/vendors/jspsych-7.1.2/jspsych.css" />
 
     <script src="helpers/params.js"></script>
@@ -50,10 +52,13 @@ Experiment details:
     var experiment_start_time = new Date();
     fullscreenActive = false;
 
+    /* initialize jsPsych */
     var jsPsych = initJsPsych({
-        on_interaction_data_update: check_fullscreen,
-        display_element: 'experiment_content',
+        // on_finish: function () {
+        //     jsPsych.data.displayData();
+        // }
     });
+
 
     var timeline = [];
     var pavlovia_init = {
@@ -69,28 +74,97 @@ Experiment details:
     ==========================
     */
 
+    if (runIntro == true) {
+        timeline.push(checkDevice, openEndedQuestions, enterFullscreen);
+    }
 
-    // if (runInstr == true) {
-    //     timeline.push(colorVisionCheck, ishiharaPlate1, ishiharaPlate2);
-    // }
+    if (runInstr == true) { //only run instructions if runInstr is true 
+        timeline.push(...instructions);
+    }
 
+    /*
+    ===============================================================
+                            TESTING PROCEDURE
+    ===============================================================
+    */
+    trialNum = 1;
+    function pushSingleTrial(conditionIndex) {
 
-    timeline.push(...instructions);
+        var getInstrStimulus = function () {
+            var text = conditions.attendedFeature[conditionIndex] === "color"
+                ? "<p><div style='color: red; display: inline-block;'> <h1>Track Color</h1> </div> changes and <div style='color: red; display: inline-block;'> <h1>ignore Size</h1> </div> changes.</p><p>Press Enter to start the display.</p>"
+                : "<p><div style='color: red; display: inline-block;'> <h1>Track Size</h1> </div> changes and <div style='color: red; display: inline-block;'> <h1>ignore Color</h1> </div> changes.</p><p>Press Enter to start the display.</p>";
+            return standard_instr_style(text);
+        };
 
+        var attendedFeatureInstr = {
+            timeline: [
+                {
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: getInstrStimulus,
+                    choices: 'NO_KEYS',
+                    trial_duration: 400, //to make sure they read the instruction
+                    data: { trial_category: "attendedFeatureInstr" },
+                },
+                {
+                    type: jsPsychHtmlKeyboardResponse,
+                    stimulus: getInstrStimulus,
+                    choices: ["Enter"],
+                    response_ends_trial: true,
+                    data: { trial_category: "trialStartWaiting" },
+                }
+            ]
+        }
 
+        var ITI = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: "<p style='color: white; font-size: 50px; text-align: center'>+</p>",
+            choices: 'No_KEYS',
+            response_ends_trial: false,
+            trial_duration: Math.random() * 500 + 500, //500-1000ms,
+            data: { trial_category: "ITI" },
+        }
+        var trial = {
+            type: rhytmicFeatureChangeTask, // plugin: ../99-commonJS/rhytmicFeatureChangeTask.js
+            //trial-wise changing condition parameters
+            attendedFeature: conditions.attendedFeature[conditionIndex],
+            attendedTempo: conditions.tempoTargetDist[conditionIndex][0],
+            distractorTempo: conditions.tempoTargetDist[conditionIndex][1],
+
+            //general parameters
+            displayDuration: paramsGeneral.displayDuration,
+            rectBaseSize: [paramsGeneral.baseWidth, paramsGeneral.baseHeight],
+            sizeChangeRate: paramsGeneral.sizeChangeRate,
+            sizeTempo: conditions.attendedFeature[conditionIndex] === "size" ? conditions.tempoTargetDist[conditionIndex][0] : conditions.tempoTargetDist[conditionIndex][1],
+            baseColor: paramsGeneral.baseColor,
+            colorChangeRate: paramsGeneral.colorChangeRate,
+            colorTempo: conditions.attendedFeature[conditionIndex] === "color" ? conditions.tempoTargetDist[conditionIndex][0] : conditions.tempoTargetDist[conditionIndex][1],
+            responseKey: " ",
+            data: { trial_category: "test" },
+            on_finish: function (data) {
+                data.trial = trialNum;
+                trialNum++;
+            }
+        };
+        timeline.push(attendedFeatureInstr, ITI, trial);
+    }
+
+    for (c = 0; c < totalTrialNum; c++) {
+        pushSingleTrial(c);
+    }
 
     /*
     ==========================
     CLOSING SECTION
     ==========================
     */
-    // timeline.push(cursor_on, finishing, debreif_qs, exit_fullscreen, closing);
+    timeline.push(cursor_on, finishing, debreif_qs, closing);
 
-    // var pavlovia_finish = {
-    //     type: jsPsychPavlovia,
-    //     command: 'finish'
-    // };
-    // timeline.push(pavlovia_finish);
+    var pavlovia_finish = {
+        type: jsPsychPavlovia,
+        command: 'finish'
+    };
+    timeline.push(pavlovia_finish);
 
     jsPsych.run(timeline);
 </script>
