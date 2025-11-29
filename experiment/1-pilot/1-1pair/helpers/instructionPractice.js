@@ -275,7 +275,6 @@ var instructionPractice = (function (jspsych) {
                 if (trial.colorTempo < 999999 && timeElapsed - lastColorChangeTime >= trial.colorTempo) {
                     colorAlt = !colorAlt;
                     currentColor = colorAlt ? altColor : trial.baseColor;
-                    console.log(currentColor);
                     lastColorChangeTime = timeElapsed;
                     colorChangeLog.push({
                         timeMs: Math.round(timeElapsed),
