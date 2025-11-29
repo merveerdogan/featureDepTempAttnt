@@ -25,9 +25,11 @@ Experiment details:
     <script type="text/javascript" src="lib/jspsych-7-pavlovia-2022.1.1.js"></script>
     <link rel="stylesheet" type="text/css" href="lib/vendors/jspsych-7.1.2/jspsych.css" />
 
-
     <script src="helpers/params.js"></script>
     <script src="helpers/functions.js"></script>
+    <script src="helpers/instructionPractice.js"></script>
+    <script src="helpers/rhytmicFeatureChangeTask.js"></script>
+    <script src="helpers/instructions.js"></script>
 </head>
 
 <body>
@@ -45,35 +47,52 @@ Experiment details:
     EXPERIMENT START
     ==========================
     */
-    var jsPsych = initJsPsych({
-        show_progress_bar: true,
-        on_interaction_data_update: check_fullscreen,
-        display_element: 'experiment_content',
-        auto_update_progress_bar: false
-    });
-
-    var timeline = [];
-
     var experiment_start_time = new Date();
     fullscreenActive = false;
 
+    var jsPsych = initJsPsych({
+        on_interaction_data_update: check_fullscreen,
+        display_element: 'experiment_content',
+    });
+
+    var timeline = [];
     var pavlovia_init = {
         type: jsPsychPavlovia,
         command: 'init'
     };
     timeline.push(pavlovia_init);
 
-    timeline.push(check_device, survey);
 
-    timeline.push(cursor_on, finishing, debreif_qs, exit_fullscreen, closing);
-
-    var pavlovia_finish = {
-        type: jsPsychPavlovia,
-        command: 'finish'
-    };
-    timeline.push(pavlovia_finish);
+    /*
+    ==========================
+    INTRO & INSTRUCTIONS        
+    ==========================
+    */
 
 
+    // if (runInstr == true) {
+    //     timeline.push(colorVisionCheck, ishiharaPlate1, ishiharaPlate2);
+    // }
+
+
+    timeline.push(...instructions);
+
+
+
+    /*
+    ==========================
+    CLOSING SECTION
+    ==========================
+    */
+    // timeline.push(cursor_on, finishing, debreif_qs, exit_fullscreen, closing);
+
+    // var pavlovia_finish = {
+    //     type: jsPsychPavlovia,
+    //     command: 'finish'
+    // };
+    // timeline.push(pavlovia_finish);
+
+    jsPsych.run(timeline);
 </script>
 </body>
 

@@ -35,7 +35,7 @@ if (shortVersion == true) {
 
 debug = false;
 runIntro = false;
-runInstr = false;
+runInstr = true;
 
 //instruction delays & screen locking
 if (debug == false) {

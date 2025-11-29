@@ -1,6 +1,41 @@
 ﻿/* Merve Erdogan - 10.21.25 
 Feature-Dependent Temporal Attention (Color & Size) - Pilot V1.1
 */
+function allow_continue() {
+    document.getElementById('next-btn').removeAttribute('disabled');
+    document.getElementById('wait_prompt').setAttribute('hidden', '');
+    document.getElementById('continue_prompt').removeAttribute('hidden');
+}
+
+function generate_instructions(instructions, enable_continue, wait_prompt, continue_prompt, button_text = 'Next') {
+    const delay_factor = 18; // should be around 20?
+    if (enable_continue) {
+        var full_text = instructions + '<div id="continue_prompt" hidden>' + continue_prompt + '</div>';
+    } else {
+        var full_text = instructions + '<div id="wait_prompt">' + wait_prompt + '</div>'
+            + '<div id="continue_prompt" hidden>' + continue_prompt + '</div>';
+    }
+    return {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: full_text,
+        on_start: function () {
+            if (!enable_continue) {
+                setTimeout(allow_continue,
+                    instructions.length * delay_factor);
+            }
+        },
+        choices: [button_text],
+        // button.setAttribute('disabled', ')... button.removeAttribute('disabled')
+        button_html: function (choice) {
+            if (enable_continue) {
+                return '<button class="jspsych-btn" id="next-btn">' + choice + '</button>';
+            } else {
+                return '<button class="jspsych-btn" id="next-btn" disabled>' + choice + '</button>';
+            }
+        },
+        post_trial_gap: 400
+    }
+}
 
 
 /*
@@ -13,7 +48,10 @@ var enterFullscreenText = [
 ];
 
 var enterFullscreen = {
-    type: 'fullscreen',
+    on_start: function () {
+        console.log('Entering fullscreen');
+    },
+    type: jsPsychFullscreen,
     message: standard_instr_style(enterFullscreenText)[0],
     onFinish: function (data) {
         [w, h] = [window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth, window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight]
@@ -35,7 +73,7 @@ var colorVisionCheckText = [
 ];
 
 var colorVisionCheck = {
-    type: "instructions",
+    type: "jsPsychInstructions",
     pages: standard_instr_style(colorVisionCheckText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -46,7 +84,7 @@ var colorVisionCheck = {
 // Note: Ishihara plate trials would need to be added separately
 // Example structure:
 // var ishiharaPlate1 = {
-//     type: "html-keyboard-response",
+//     type: "jsPsychHtmlKeyboardResponse",
 //     stimulus: "<img src='path/to/ishihara1.jpg' style='max-width: 800px; max-height: 600px;'>",
 //     choices: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'X'],
 //     prompt: "<p style='color: white; font-size: 20px;'>Type the number you see (or 'X' if you cannot see a number):</p>",
@@ -131,7 +169,7 @@ INSTRUCTION PROCEDURES
 
 // Setup instructions after fullscreen
 var instrStart = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(instrStartText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -141,7 +179,7 @@ var instrStart = {
 
 // Color alternation explanation with live example display
 var colorAlternationExplanation = {
-    type: "instructionPractice",
+    type: instructionPractice,
     instructionText: practice_instr_style(colorAlternationExplanationText)[0],
     attendedFeature: "color",
     attendedTempo: 300,
@@ -161,7 +199,7 @@ var colorAlternationExplanation = {
 
 // Size alternation explanation with live example display
 var sizeAlternationExplanation = {
-    type: "instructionPractice",
+    type: instructionPractice,
     instructionText: practice_instr_style(sizeAlternationExplanationText)[0],
     attendedFeature: "size",
     attendedTempo: 300,
@@ -181,9 +219,9 @@ var sizeAlternationExplanation = {
 
 // Fixation cross before examples (for other uses)
 var fixationCross = {
-    type: "html-keyboard-response",
+    type: jsPsychHtmlKeyboardResponse,
     stimulus: "<p style='color: white; font-size: 50px; text-align: center'>+</p>",
-    choices: jsPsych.NO_KEYS,
+    choices: 'NO_KEYS',
     response_ends_trial: false,
     trial_duration: 350,
     data: { trialCategory: "fixation_cross" }
@@ -191,7 +229,7 @@ var fixationCross = {
 
 // Both features alternating explanation
 var bothFeaturesAlternatingExplanation = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(bothFeaturesAlternatingExplanationText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -201,7 +239,7 @@ var bothFeaturesAlternatingExplanation = {
 
 // Both features alternating example demonstration
 var bothFeaturesAlternatingExample = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "color",
     attendedTempo: 280,
     distractorTempo: 320,
@@ -219,7 +257,7 @@ var bothFeaturesAlternatingExample = {
 
 // Color rhythmic, size random explanation
 var colorRhythmicSizeRandomExplanation = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(colorRhythmicSizeRandomExplanationText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -229,7 +267,7 @@ var colorRhythmicSizeRandomExplanation = {
 
 // Color rhythmic, size random example demonstration
 var colorRhythmicSizeRandomExample = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "color",
     attendedTempo: 700,
     distractorTempo: 0, // Random
@@ -247,7 +285,7 @@ var colorRhythmicSizeRandomExample = {
 
 // Size rhythmic, color random explanation
 var sizeRhythmicColorRandomExplanation = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(sizeRhythmicColorRandomExplanationText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -257,7 +295,7 @@ var sizeRhythmicColorRandomExplanation = {
 
 // Size rhythmic, color random example demonstration
 var sizeRhythmicColorRandomExample = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "size",
     attendedTempo: 700,
     distractorTempo: 0, // Random
@@ -275,7 +313,7 @@ var sizeRhythmicColorRandomExample = {
 
 // Task explanation
 var taskExplanation = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(taskExplanationText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -285,7 +323,7 @@ var taskExplanation = {
 
 // Practice color attended instruction
 var practiceColorAttendedInstruction = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(practiceColorAttendedInstructionText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -296,7 +334,7 @@ var practiceColorAttendedInstruction = {
 
 // Practice display - Color attended, both rhythmic
 var practiceColorAttended = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "color",
     attendedTempo: 700,
     distractorTempo: 500,
@@ -314,7 +352,7 @@ var practiceColorAttended = {
 
 // Practice size attended instruction
 var practiceSizeAttendedInstruction = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(practiceSizeAttendedInstructionText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -324,7 +362,7 @@ var practiceSizeAttendedInstruction = {
 
 // Practice display - Size attended, both rhythmic
 var practiceSizeAttended = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "size",
     attendedTempo: 700,
     distractorTempo: 500,
@@ -342,7 +380,7 @@ var practiceSizeAttended = {
 
 // Random alternation reminder
 var randomAlternationReminder = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(randomAlternationReminderText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -352,7 +390,7 @@ var randomAlternationReminder = {
 
 // Practice size with random color instruction
 var practiceSizeWithRandomColorInstruction = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(practiceSizeWithRandomColorInstructionText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -362,7 +400,7 @@ var practiceSizeWithRandomColorInstruction = {
 
 // Practice display - Size rhythmic, color random
 var practiceSizeWithRandomColor = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "size",
     attendedTempo: 700,
     distractorTempo: 0, // Random
@@ -380,7 +418,7 @@ var practiceSizeWithRandomColor = {
 
 // Practice color with random size instruction
 var practiceColorWithRandomSizeInstruction = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(practiceColorWithRandomSizeInstructionText),
     show_clickable_nav: true,
     allow_backward: false,
@@ -390,7 +428,7 @@ var practiceColorWithRandomSizeInstruction = {
 
 // Practice display - Color rhythmic, size random
 var practiceColorWithRandomSize = {
-    type: "rhytmicFeatureChangeTask",
+    type: rhytmicFeatureChangeTask,
     attendedFeature: "color",
     attendedTempo: 700,
     distractorTempo: 0, // Random
@@ -408,7 +446,7 @@ var practiceColorWithRandomSize = {
 
 // Final instructions - ready to start
 var instrEnd = {
-    type: "instructions",
+    type: jsPsychInstructions,
     pages: standard_instr_style(finalInstructionsText),
     show_clickable_nav: true,
     allow_backward: false,
