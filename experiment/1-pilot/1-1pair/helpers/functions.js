@@ -1,15 +1,3 @@
-var prolific_PID = getURLParameter('PROLIFIC_PID');
-var hitID = getURLParameter('STUDY_ID');
-var assignmentID = getURLParameter('SESSION_ID');
-let subj_id = prompt("If the following participant ID is not correct please enter your ID: " + prolific_PID + "", "");
-
-if (prolific_PID != null && prolific_PID != "" && prolific_PID != 'no_query') {
-    participantID = exp_version + "_" + prolific_PID;
-} else {
-    participantID = exp_version + "_" + subj_id.toString();
-}
-
-
 
 /*
 ===============================================================
@@ -494,21 +482,7 @@ var debreif_qs = {
         /*------ Save Data -----*/
         exp_complete = true;
         experiment_end_time = new Date();
-        if (typeof experiment_start_time === 'undefined') {
-            experiment_start_time = [];
-        }
 
-        // Convert to Date objects if they're not already
-        let startTime;
-        if (experiment_start_time instanceof Date) {
-            startTime = experiment_start_time;
-        } else if (Array.isArray(experiment_start_time) && experiment_start_time.length > 0) {
-            startTime = new Date(experiment_start_time[0]);
-        } else if (typeof experiment_start_time === 'string') {
-            startTime = new Date(experiment_start_time);
-        } else {
-            startTime = new Date(); // Fallback to current time
-        }
 
         const endTime = experiment_end_time instanceof Date ? experiment_end_time : new Date(experiment_end_time);
 
@@ -516,10 +490,7 @@ var debreif_qs = {
             gender: data.response.gender,
             age: data.response.age,
             attentionScore: data.response.attention,
-            participantID: participantID,
-            experimentStartTime: formatReadableDate(startTime),
             experimentEndTime: formatReadableDate(endTime),
-            browser: browserInfo,
         });
 
         // var full = jsPsych.data.get();

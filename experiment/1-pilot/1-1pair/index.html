@@ -67,13 +67,44 @@ Experiment details:
     };
     timeline.push(pavlovia_init);
 
+    var prolific_PID = getURLParameter('PROLIFIC_PID');
+    var hitID = getURLParameter('STUDY_ID');
+    var assignmentID = getURLParameter('SESSION_ID');
+    let subj_id = prompt("If the following participant ID is not correct please enter your ID: " + prolific_PID + "", "");
+
+    if (prolific_PID != null && prolific_PID != "" && prolific_PID != 'no_query') {
+        participantID = exp_version + "_" + prolific_PID;
+    } else {
+        participantID = exp_version + "_" + subj_id.toString();
+    }
+    if (typeof experiment_start_time === 'undefined') {
+        experiment_start_time = [];
+    }
+
+    // Convert to Date objects if they're not already
+    let startTime;
+    if (experiment_start_time instanceof Date) {
+        startTime = experiment_start_time;
+    } else if (Array.isArray(experiment_start_time) && experiment_start_time.length > 0) {
+        startTime = new Date(experiment_start_time[0]);
+    } else if (typeof experiment_start_time === 'string') {
+        startTime = new Date(experiment_start_time);
+    } else {
+        startTime = new Date(); // Fallback to current time
+    }
+
+    jsPsych.data.addProperties({
+        participantID: participantID,
+        experimentStartTime: formatReadableDate(startTime),
+        browser: browserInfo,
+    });
+
 
     /*
     ==========================
     INTRO & INSTRUCTIONS        
     ==========================
     */
-
     if (runIntro == true) {
         timeline.push(checkDevice, openEndedQuestions, enterFullscreen);
     }
@@ -81,6 +112,7 @@ Experiment details:
     if (runInstr == true) { //only run instructions if runInstr is true 
         timeline.push(...instructions);
     }
+
 
     /*
     ===============================================================

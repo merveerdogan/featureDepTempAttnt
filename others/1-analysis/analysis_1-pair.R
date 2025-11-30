@@ -315,9 +315,25 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session){
+  N=length(unique(circular_all_data$participantID))
+  circularBinWidth = 30;
+
+  fixed_max_count_df <- circular_long %>%
+    group_by(attendedFeature, tempo_pair) %>%
+    summarise(
+      fixed_max_count = {
+        p <- ggplot(cur_data(), aes(x = angles)) +
+          geom_histogram(binwidth = circularBinWidth)
+        max(ggplot_build(p)$data[[1]]$count)
+      },
+      .groups = "drop"
+    )
+  fixed_max_count<- max(fixed_max_count_df$fixed_max_count)
+  
+  ### TAB 1 ###
   output$raw_dist <- renderPlot({
     
-    N=length(unique(dat$participantID))
+   
     ggplot(circular_long, aes(x = key_time, fill = attendedFeature)) +
       geom_dotplot() +
       scale_fill_manual(values = c("color"="firebrick","size"="steelblue")) +
@@ -336,12 +352,13 @@ server <- function(input, output, session){
       theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 18))
     })
   
-  
+  ### TAB 2 ###
   output$avg_plot <- renderPlot({
    
     ggplot(circular_long, aes(x = angles, fill = angle_type)) +
-      geom_histogram(binwidth = 10, alpha = 0.7, position="identity") +
+      geom_histogram(binwidth = circularBinWidth, alpha = 0.7, position="identity") +
       coord_polar(start=-pi/2, direction=1) +
+      scale_y_continuous(limits = c(0, fixed_max_count)) +
       scale_fill_manual(
         name = "Key time as a reference to",
         values = c("size_key_angles" = "steelblue",
@@ -374,10 +391,9 @@ server <- function(input, output, session){
       theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18))
   })
   
-  
+  ### TAB 3 ###
   output$trial_plot <- renderPlot({
     dat <- circular_long %>%
-      arrange(participantID) %>%
       mutate(participant_num = as.integer(factor(participantID))) %>%
       group_by(participant_num, attendedFeature, tempo_pair) %>%
       summarise(
@@ -396,57 +412,64 @@ server <- function(input, output, session){
           "tempo_pair",
           "trials_sorted" = "trial"
         )
-      )
+      ) %>%
+      select(participantID, participant_num, trial = trials_sorted,
+             attendedFeature, tempo_pair, angle_type, angles, key_time)
     
-    ggplot(circular_long, aes(x = angles, fill = angle_type)) +
-      geom_histogram(binwidth = 10, alpha = 0.7, position = "identity") +
-      coord_polar(start = -pi/2, direction = 1) +
-      scale_fill_manual(
-        name = "Key time as a reference to",
-        values = c("size_key_angles" = "steelblue",
-                   "color_key_angles" = "firebrick"),
-        labels = c("size_key_angles" = "Size",
-                   "color_key_angles" = "Color")
-      ) +
-      scale_x_continuous(
-        breaks = c(0,90,180,270),
-        labels = c("0°","90°","180°","270°"),
-        limits = c(0,360)
-      ) +
-      theme_minimal() +
-      facet_grid(
-        attendedFeature ~ tempo_pair,
-        labeller = labeller(
-          tempo_pair = function(x) {
-            paste0("target ", sub("-.*","",x),
-                   "  -  distractor ", sub(".*-","",x))
-          }
-        )
-      ) +
-      theme(
-        strip.text = element_text(size = 12),
-        axis.title = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank()
-      ) +
-      ggtitle(paste0("N=", N)) +
-      theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18))
-    
-  })
-  
-  
-  ### TAB 3 ###
-  output$angle_plot <- renderPlot({
-    dat <- circular_long %>%
-      group_by(participantID,trial, attendedFeature, tempo_pair) %>%
-      arrange(angles) %>%
-      mutate(angle_index = row_number()) %>%
-      filter(angle_index >= input$angle_range[1],
-             angle_index <= input$angle_range[2])
     
     ggplot(dat, aes(x = angles, fill = angle_type)) +
-      geom_histogram(binwidth = 10, alpha = 0.7, position="identity") +
+      geom_histogram(binwidth = circularBinWidth, alpha = 0.7, position = "identity") +
       coord_polar(start = -pi/2, direction = 1) +
+      scale_fill_manual(
+        name = "Key time as a reference to",
+        values = c("size_key_angles" = "steelblue",
+                   "color_key_angles" = "firebrick"),
+        labels = c("size_key_angles" = "Size",
+                   "color_key_angles" = "Color")
+      ) +
+      scale_x_continuous(
+        breaks = c(0,90,180,270),
+        labels = c("0°","90°","180°","270°"),
+        limits = c(0,360)
+      ) +
+      theme_minimal() +
+      facet_grid(
+        attendedFeature ~ tempo_pair,
+        labeller = labeller(
+          tempo_pair = function(x) {
+            paste0("target ", sub("-.*","",x),
+                   "  -  distractor ", sub(".*-","",x))
+          }
+        )
+      ) +
+      theme(
+        strip.text = element_text(size = 12),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank()
+      ) +
+      ggtitle(paste0("N=", N)) +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18))
+    
+  })
+  
+  
+  ### TAB 4 ###
+  output$angle_plot <- renderPlot({
+    dat <- circular_long %>%
+      group_by(participantID, trial, attendedFeature, tempo_pair) %>%
+      arrange(key_time) %>%
+      mutate(key_index = row_number()) %>%
+      filter(key_index >= input$angle_range[1],
+             key_index <= input$angle_range[2])
+    
+  
+    
+   ggplot(dat, aes(x = angles, fill = angle_type)) +
+      geom_histogram(binwidth = circularBinWidth, alpha = 0.7, position="identity") +
+      coord_polar(start = -pi/2, direction = 1) +
+      # FIXED Y-SCALE FOR ALL INPUT SETTINGS
+      scale_y_continuous(limits = c(0, fixed_max_count)) +
       scale_fill_manual(
         name = "Key time as a reference to",
         values = c("size_key_angles" = "steelblue",
@@ -480,7 +503,7 @@ server <- function(input, output, session){
   })
   
   
-  ###TAB 4 ###
+  ### TAB 5 ###
   output$moving_window_plot <- renderPlot({
     
     win_start <- input$win_start
@@ -493,9 +516,11 @@ server <- function(input, output, session){
       filter(key_index >= win_start,
              key_index <= win_end)
     
-    ggplot(dat, aes(x = angles, fill = angle_type)) +
-      geom_histogram(binwidth = 10, alpha = 0.7, position="identity") +
+   ggplot(dat, aes(x = angles, fill = angle_type)) +
+      geom_histogram(binwidth = circularBinWidth, alpha = 0.7, position="identity") +
       coord_polar(start = -pi/2, direction = 1) +
+      # FIXED Y-SCALE FOR ALL INPUT SETTINGS
+      scale_y_continuous(limits = c(0, fixed_max_count)) +
       scale_fill_manual(
         name = "Key time as a reference to",
         values = c("size_key_angles" = "steelblue",
