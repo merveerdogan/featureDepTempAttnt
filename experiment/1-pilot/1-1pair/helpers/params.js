@@ -1,21 +1,20 @@
 /* ------------------------------------------
-Merve Erdogan - 10.17.25
+Merve Erdogan - 12.05.25
 Feature Dependent Temporal Attention - Tapping - 1 pair
-Conditions (2x4 = 8): 
+Conditions (2x3 = 6): 
 - Attended feature: Color attended (Size distractor)  vs. Size attended (Color distractor)
 - Tempo (target, distractor)
-    - 350, 400
-    - 400, 350
-    - 450, 500
-    - 500, 450
+    - 420, 480
+    - 480, 420
+    - 480, 540
 
 Parameters:
-- Color change rate (hsl): 40
+- Color change rate (hsl): 80
 - Size change rate: 1.2
 - Base width: 50
 - Base height: 100
 - Base color: "hsl(210, 100%, 75%)"
-- Background color: "black"
+- Background color: "white"
 ------------------------------------------*/
 
 
