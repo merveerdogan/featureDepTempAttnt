@@ -4,7 +4,7 @@ Feature Dependent Temporal Attention - Tapping
 ----------------------------------------------
 Experiment details: 
 - 1 pair of features: Color and Size
-- 4 conditions: Color attended (Size distractor) vs. Size attended (Color distractor)
+- 2 conditions: Color attended (Size distractor) vs. Size attended (Color distractor)
 - Task: tapping the attended feature (color or size) as fast as possible
 -->
 
@@ -151,7 +151,7 @@ Experiment details:
         var ITI = {
             type: jsPsychHtmlKeyboardResponse,
             stimulus: "<p style='color: white; font-size: 50px; text-align: center'>+</p>",
-            choices: 'No_KEYS',
+            choices: 'NO_KEYS',
             response_ends_trial: false,
             trial_duration: Math.random() * 500 + 500, //500-1000ms,
             data: { trial_category: "ITI" },

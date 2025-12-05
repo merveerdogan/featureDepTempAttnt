@@ -53,7 +53,7 @@ if (debug == false) {
 CONDITIONS
 ===============================*/
 attendedFeatureCond = ['color', 'size'];
-tempoTargetDistCond = [[480, 420], [480, 480], [480, 540]];
+tempoTargetDistCond = [[480, 420], [480, 480], [480, 540]]; //target, distractor
 
 
 /*===============================
@@ -65,7 +65,7 @@ paramsGeneral = {
     baseWidth: 50,
     baseHeight: 100,
     baseColor: "hsl(210, 100%, 50%)",
-    bgColor: "black"
+    bgColor: "white"
 }
 
 /*=============================   
