@@ -7,8 +7,8 @@
   <style>
     body {
       margin: 0;
-      background: black;
-      color: white;
+      background: white;
+      color: black;
       font-family: sans-serif;
       display: flex;
       flex-direction: column;
@@ -21,7 +21,7 @@
       position: fixed;
       top: 10px;
       left: 10px;
-      background: #222;
+      background: white;
       padding: 10px;
       border-radius: 6px;
       overflow-y: auto;
@@ -29,7 +29,7 @@
     }
 
     #controls fieldset {
-      border: 1px solid #444;
+      border: 1px solid black;
       margin: 6px 0;
       padding: 6px;
     }
@@ -44,15 +44,15 @@
     #controls select {
       width: 100%;
       font-size: 12px;
-      background: #333;
-      color: white;
-      border: 1px solid #555;
+      background: white;
+      color: black;
+      border: 1px solid black;
     }
 
     #controls button {
       margin-top: 8px;
       width: 100%;
-      background: #444;
+      background: black;
       color: white;
       border: none;
       padding: 6px;
@@ -65,7 +65,7 @@
       left: calc(50% + 100px);
       /* center corrected for sidebar width */
       transform: translate(-50%, -50%);
-      background-color: #80FFFE;
+      background-color: hsl(210, 100%, 50%)
     }
   </style>
 
@@ -139,16 +139,21 @@
       const hueShift = +document.getElementById("hueShift").value;
       const lumShift = +document.getElementById("lumShift").value;
 
+      // Reset all states first
+      let sizeOn = false, rotOn = false, colorOn = false, lumOn = false;
+
       rect.style.width = baseWidth + "px";
       rect.style.height = baseHeight + "px";
       rect.style.backgroundColor = baseColor;
 
-      let sizeOn = false, rotOn = false, colorOn = false, lumOn = false;
       function applyTransform() {
         let scalePart = sizeOn ? `scale(${sizeFactor})` : "scale(1)";
         let rotPart = rotOn ? `rotate(${rotationAngle}deg)` : "rotate(0deg)";
-        rect.style.transform = scalePart + " " + rotPart;
+        rect.style.transform = `translate(-50%, -50%) ${scalePart} ${rotPart}`;
       }
+
+      // Initialize to base state - ensure clean start at base size
+      applyTransform();
 
       // Feature toggle functions
       function toggleSize() { sizeOn = !sizeOn; applyTransform(); }
@@ -175,7 +180,11 @@
         function loop() {
           featureFn(); // target
           if (distractorFn) {
-            if (distractorMode === "rhythmic") {
+            // If both size and color are active, start them simultaneously
+            const isSizeColorPair = (f1 === "size" && f2 === "color") || (f1 === "color" && f2 === "size");
+            if (isSizeColorPair && distractorMode === "rhythmic") {
+              distractorFn(); // Start immediately with target for simultaneous start
+            } else if (distractorMode === "rhythmic") {
               timers.push(setTimeout(distractorFn, f2Interval));
             } else if (distractorMode === "random") {
               let offset = offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
@@ -184,7 +193,8 @@
           }
           timers.push(setTimeout(loop, interval));
         }
-        loop();
+        // Start after first interval to ensure base state is visible first
+        timers.push(setTimeout(loop, interval));
       }
 
       rhythmicLoop(featureMap[f1], f1Interval, featureMap[f2], f2Mode);
@@ -211,7 +221,7 @@
             </select>
           </label>
           <label>Target interval (ms):
-            <input type="number" id="targetInterval" value="400">
+            <input type="number" id="targetInterval" value="350">
           </label>
         </fieldset>
         <fieldset>
@@ -236,13 +246,13 @@
           <legend>Stimulus base</legend>
           <label>Base width (px): <input type="number" id="baseWidth" value="50"></label>
           <label>Base height (px): <input type="number" id="baseHeight" value="100"></label>
-          <label>Base color: <input type="color" id="baseColor" value="#80FFFE"></label>
+          <label>Base color: <input type="color" id="baseColor" value="#0080FF"></label>
         </fieldset>
         <fieldset>
           <legend>Change magnitudes</legend>
           <label>Size factor: <input type="number" id="sizeFactor" step="0.1" value="1.2"></label>
           <label>Rotation angle (°): <input type="number" id="rotationAngle" value="15"></label>
-          <label>Hue shift (°): <input type="number" id="hueShift" value="40"></label>
+          <label>Hue shift (°): <input type="number" id="hueShift" value="80"></label>
           <label>Luminance shift (%): <input type="number" id="lumShift" value="25"></label>
         </fieldset>`;
     }

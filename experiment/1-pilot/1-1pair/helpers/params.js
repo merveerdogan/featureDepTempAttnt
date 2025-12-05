@@ -54,7 +54,7 @@ if (debug == false) {
 CONDITIONS
 ===============================*/
 attendedFeatureCond = ['color', 'size'];
-tempoTargetDistCond = [[350, 400], [400, 350], [450, 500], [500, 450]];
+tempoTargetDistCond = [[480, 420], [480, 480], [480, 540]];
 
 
 /*===============================
@@ -79,7 +79,8 @@ let study_title = 'Tap with the beat!'
 let qualtricsConsentURL = "https://yalesurvey.ca1.qualtrics.com/jfe/form/SV_069acy26ux5gDZ4";
 
 
-exp_version = "p1.1"
+exp_version = "p1.2"
+// ⚠️ IMPORTANT: When updating version, also update CHANGELOG.md!
 
 let exp_date = new Date().toISOString().split('T')[0];
 

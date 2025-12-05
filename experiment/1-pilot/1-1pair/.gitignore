@@ -11,8 +11,12 @@ ehthumbs.db
 Thumbs.db
 
 # Ignore data files (optional - uncomment if you don't want to track data)
-# data/
+# Data is organized by version: data/v1.1/, data/v1.2/, etc.
+# Keep README.md files in data directories for documentation
+data/
 dataLocal/
+!data/README.md
+!data/*/README.md
 
 # Ignore editor files
 *.swp
