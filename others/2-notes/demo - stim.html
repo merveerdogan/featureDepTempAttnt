@@ -175,29 +175,43 @@
 
       const featureMap = { size: toggleSize, color: toggleColor, luminance: toggleLuminance, rotation: toggleRotation };
 
-      // === Target rhythm generator ===
-      function rhythmicLoop(featureFn, interval, distractorFn, distractorMode) {
+      // === Independent rhythm generators ===
+      // Target rhythm - independent loop
+      function startTargetLoop(featureFn, interval) {
         function loop() {
-          featureFn(); // target
-          if (distractorFn) {
-            // If both size and color are active, start them simultaneously
-            const isSizeColorPair = (f1 === "size" && f2 === "color") || (f1 === "color" && f2 === "size");
-            if (isSizeColorPair && distractorMode === "rhythmic") {
-              distractorFn(); // Start immediately with target for simultaneous start
-            } else if (distractorMode === "rhythmic") {
-              timers.push(setTimeout(distractorFn, f2Interval));
-            } else if (distractorMode === "random") {
-              let offset = offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
-              timers.push(setTimeout(distractorFn, interval + offset));
-            }
-          }
+          featureFn();
           timers.push(setTimeout(loop, interval));
         }
         // Start after first interval to ensure base state is visible first
         timers.push(setTimeout(loop, interval));
       }
 
-      rhythmicLoop(featureMap[f1], f1Interval, featureMap[f2], f2Mode);
+      // Distractor rhythm - independent loop for rhythmic mode
+      function startDistractorLoop(featureFn, interval) {
+        function loop() {
+          featureFn();
+          timers.push(setTimeout(loop, interval));
+        }
+        // Start after first interval to ensure base state is visible first
+        timers.push(setTimeout(loop, interval));
+      }
+
+      // Start target loop
+      startTargetLoop(featureMap[f1], f1Interval);
+
+      // Start distractor based on mode
+      if (f2Mode === "rhythmic") {
+        // Independent rhythm at f2Interval
+        startDistractorLoop(featureMap[f2], f2Interval);
+      } else if (f2Mode === "random") {
+        // For random mode, schedule relative to target rhythm
+        function scheduleRandomDistractor() {
+          let offset = offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
+          timers.push(setTimeout(() => featureMap[f2](), f1Interval + offset));
+          timers.push(setTimeout(scheduleRandomDistractor, f1Interval));
+        }
+        timers.push(setTimeout(scheduleRandomDistractor, f1Interval));
+      }
     }
 
     function updateControls() {

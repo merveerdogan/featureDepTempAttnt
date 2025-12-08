@@ -42,6 +42,13 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
                 pretty_name: "Tested feature pair",
                 description: "Feature pair to test: 'color-size' or 'size-luminance' or 'rotation-color' or 'rotation-luminance'."
             },
+            startTimeDiff: {
+                type: jspsych.ParameterType.INT,
+                default: 0,
+                pretty_name: "Target-distractor start time difference (ms)",
+                description: "Time difference between target and distractor feature changes."
+            },
+
             /*===============================
             TEMPO PARAMETERS
             ================================*/
@@ -150,24 +157,55 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
             const baseWidth = trial.rectBaseSize[0];
             const baseHeight = trial.rectBaseSize[1];
 
+            // Calculate start times for attended and distractor features
+            // Attended feature's first change to base state (small/blue) should happen at attendedTempo
+            // Distractor feature's first change to base state (small/blue) should happen at attendedTempo + startTimeDiff
+            // Since features start at base state, sequence should be:
+            //   1. Start at base (time 0)
+            //   2. Change to alternate (needs to happen before target time)
+            //   3. Change back to base at target time
+            // To have change back to base at targetTime, we need: targetTime - lastChangeTime = tempo
+            // So: lastChangeTime = targetTime - tempo (this is when we change to alternate)
+            const attendedStartTime = 0;
+            const distractorStartTime = attendedStartTime + trial.startTimeDiff;
+
+            // Determine which feature is attended and calculate initial lastChangeTime
+            // Since we start at base, the sequence is: base -> alternate -> base (at target time)
+            // So: change to alternate at max(0, targetTime - tempo), change to base at targetTime
+            const sizeIsAttended = trial.attendedFeature === "size";
+            const sizeStartTime = sizeIsAttended ? attendedStartTime : distractorStartTime;
+            const sizeTempo = sizeIsAttended ? trial.attendedTempo : trial.distractorTempo;
+            // Set lastSizeChangeTime so first change happens at sizeAlternateChangeTime
+
+            const colorIsAttended = trial.attendedFeature === "color";
+            const colorStartTime = colorIsAttended ? attendedStartTime : distractorStartTime;
+            const colorTempo = colorIsAttended ? trial.attendedTempo : trial.distractorTempo;
+
             // Size state
             let large = false;
             let currentRectWidth = baseWidth;
             let currentRectHeight = baseHeight;
-            let lastSizeChangeTime = 0;
+            let lastSizeChangeTime = sizeStartTime;
 
             // Color state
             let colorAlt = false;
             let currentColor = trial.baseColor;
-            let lastColorChangeTime = 0;
+            let lastColorChangeTime = colorStartTime;
+
 
             /*  
             ============================
             DATA TRACKING PARAMETERS
             ============================
             */
-            let sizeChangeLog = [];
-            let colorChangeLog = [];
+            let sizeChangeLog = [{
+                timeMs: Math.round(sizeStartTime),
+                rectSize: [Math.round(baseWidth), Math.round(baseHeight)]
+            }];
+            let colorChangeLog = [{
+                timeMs: Math.round(colorStartTime),
+                colorHsl: trial.baseColor
+            }];
             let keypressLog = [];
 
 
@@ -189,7 +227,7 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
 
                 if (timeElapsed < trial.displayDuration) {
                     // Check if it's time for size change
-                    if (timeElapsed - lastSizeChangeTime >= trial.sizeTempo) {
+                    if (timeElapsed - lastSizeChangeTime >= sizeTempo) {
                         large = !large;
                         if (large) {
                             currentRectWidth = baseWidth * trial.sizeChangeRate;
@@ -206,7 +244,7 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
                     }
 
                     // Check if it's time for color change
-                    if (timeElapsed - lastColorChangeTime >= trial.colorTempo) {
+                    if (timeElapsed - lastColorChangeTime >= colorTempo) {
                         colorAlt = !colorAlt;
                         currentColor = colorAlt ? altColor : trial.baseColor;
                         lastColorChangeTime = timeElapsed;
@@ -229,6 +267,7 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
                 }
             }
 
+
             /*
             ============================
             END TRIAL & SAVE DATA
@@ -246,6 +285,7 @@ var rhytmicFeatureChangeTask = (function (jspsych) {
                     testedFeaturePair: trial.testedFeaturePair,
                     sizeTempo: trial.sizeTempo,
                     colorTempo: trial.colorTempo,
+                    startTimeDiff: trial.startTimeDiff,
                     rectBaseSize: [baseWidth, baseHeight],
                     sizeChangeRate: trial.sizeChangeRate,
                     sizeChangeAmount: [

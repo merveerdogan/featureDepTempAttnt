@@ -156,12 +156,14 @@ Experiment details:
             trial_duration: Math.random() * 500 + 500, //500-1000ms,
             data: { trial_category: "ITI" },
         }
+
         var trial = {
             type: rhytmicFeatureChangeTask, // plugin: ../99-commonJS/rhytmicFeatureChangeTask.js
             //trial-wise changing condition parameters
             attendedFeature: conditions.attendedFeature[conditionIndex],
             attendedTempo: conditions.tempoTargetDist[conditionIndex][0],
             distractorTempo: conditions.tempoTargetDist[conditionIndex][1],
+            startTimeDiff: conditions.startTimeDiff[conditionIndex],
 
             //general parameters
             displayDuration: paramsGeneral.displayDuration,

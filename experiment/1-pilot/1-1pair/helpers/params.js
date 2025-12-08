@@ -1,12 +1,11 @@
 /* ------------------------------------------
-Merve Erdogan - 12.05.25
+Merve Erdogan - 12.06.25
 Feature Dependent Temporal Attention - Tapping - 1 pair
-Conditions (2x3 = 6): 
+Version: p1.3
+Conditions (2x6 = 12): 
 - Attended feature: Color attended (Size distractor)  vs. Size attended (Color distractor)
-- Tempo (target, distractor)
-    - 420, 480
-    - 480, 420
-    - 480, 540
+- Tempo (target, distractor): 480, 480
+- Target-distractor start time conditions: 80, 160, 240, 320, 400, 480
 
 Parameters:
 - Color change rate (hsl): 80
@@ -15,6 +14,7 @@ Parameters:
 - Base height: 100
 - Base color: "hsl(210, 100%, 75%)"
 - Background color: "white"
+- Display duration: 20 seconds
 ------------------------------------------*/
 
 
@@ -53,7 +53,8 @@ if (debug == false) {
 CONDITIONS
 ===============================*/
 attendedFeatureCond = ['color', 'size'];
-tempoTargetDistCond = [[480, 420], [480, 480], [480, 540]]; //target, distractor
+tempoTargetDistCond = [[480, 480]]; //target, distractor
+startTimeDiffCond = [80, 160, 240, 320, 400, 480]; //target-distractor start time conditions
 
 
 /*===============================
@@ -65,7 +66,8 @@ paramsGeneral = {
     baseWidth: 50,
     baseHeight: 100,
     baseColor: "hsl(210, 100%, 50%)",
-    bgColor: "white"
+    bgColor: "white",
+    displayDuration: 20000, //20 seconds,
 }
 
 /*=============================   
@@ -78,8 +80,8 @@ let study_title = 'Tap with the beat!'
 let qualtricsConsentURL = "https://yalesurvey.ca1.qualtrics.com/jfe/form/SV_069acy26ux5gDZ4";
 
 
-exp_version = "p1.2"
-// ⚠️ IMPORTANT: When updating version, also update CHANGELOG.md!
+exp_version = "p1.3"
+// IMPORTANT: When updating version, also update CHANGELOG.md!
 
 let exp_date = new Date().toISOString().split('T')[0];
 
